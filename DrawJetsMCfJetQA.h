@@ -1120,7 +1120,7 @@ TH1 *DrawJetMatching(const char *MCfileName, const char *DfileName,
   hoptset(*Yhrun2Stat, 0, ColorPallete[2], PlotPtMin, PlotPtMax, 1e-7, 1e0, 0.6, 1, 2, 25); 
   Yhrun2Stat->Scale(1./ 58.1);
   Yhrun2Stat->Draw("e same"); 
-  legendYield->AddEntry(Yhrun2Syst, "Run 2,#kern[-0.7]{ }#sqrt{#it{s}}=13.1 TeV");
+  legendYield->AddEntry(Yhrun2Syst, "Run 2,#kern[-0.7]{ }#sqrt{#it{s}}=13 TeV");
 
   InvYMC->Draw("pesame");
   legendYield->AddEntry(InvYMC, "PYTHIA8", "lep");
@@ -1203,7 +1203,7 @@ TH1 *DrawJetMatching(const char *MCfileName, const char *DfileName,
   hrun2Syst->Draw("pe2same"); 
   hoptset(*hrun2Stat, 0, ColorPallete[2], PlotPtMin, PlotPtMax, 1e-7, 1e0, 0.6, 1, 2, 25); 
   hrun2Stat->Draw("e same"); 
-  unfoldlegend->AddEntry(hrun2Syst, "Run 2,#kern[-0.7]{ }#sqrt{#it{s}}=13.1 TeV");
+  unfoldlegend->AddEntry(hrun2Syst, "Run 2,#kern[-0.7]{ }#sqrt{#it{s}}=13 TeV");
 
 
   auto NormMCP = (TH1*) JetMCPPt->Clone(Form("hist_%i", ++n));

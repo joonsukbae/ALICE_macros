@@ -20,21 +20,21 @@ using namespace std;
 ///////////////////
 /// plot switch ///
 ///////////////////
-const auto TrackProcess = 1;
-const auto ConstituentProcess = 1;
-const auto JetProcess = 1;
+const auto TrackProcess = 0;
+const auto ConstituentProcess = 0;
+const auto JetProcess = 0;
 const auto JetMatchingProcess = 1;
 const bool REBINON = true;
 const bool NORMEVENTS = true; // set normalization factor (true: Nevts, false: Nobs) 
 #define NORMEVENT // set axis titles
 const bool SEL8WINDOW = true; // true: final distribution constraint to sel8, false: final dist. in INEL
-const bool XSECTION = false; // only set final corrected results (true: xsection normalization, false: Nevt normalization)
+const bool XSECTION = true; // only set final corrected results (true: xsection normalization, false: Nevt normalization)
 const bool DRAWPLOTS = true;
 const bool DRAWRM = true;
 const double PlotPtMin = 10;
 const double PlotPtMax = 140;
 
-const bool SYSTUNFOLD = false;
+const bool SYSTUNFOLD = true;
 
 ///////////////////////////////////////////////
 /// pp 13.6 TeV normalization factors /////////
@@ -61,11 +61,9 @@ const TString refDir =
     // "../../jets/data/jetfinderQA/AnalysisResults/LHC22o_apass7_MB_small/sel8Full_globalTracks/";
 
     // "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/"; // const < 200 GeV
-    // "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/Track100GeV/"; // [HP2024] const < 100 GeV
+    "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/Track100GeV/"; // [HP2024] const < 100 GeV
     // "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/"; // [QM2025] const < 100 GeV, UE-subtracted
     
-    "../../jets/mc/AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/"; // track tuned, track pT < 100 GeV, MCP: selMC w/o zvtxGeV, MCP: selMC w/o zvtx
-    // "../../jets/mc/AnalysisResults/LHC24g4/selMC/trackTuner/"; // Area-based method, do Sparse, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtxGeV, MCP: selMC w/o zvtx
 // TString refFile = "AnalysisResults.root";
 TString refFile = "AnalysisResults.root";
 //TString refFile = "CombinedResults.root";
@@ -74,7 +72,7 @@ const char *refName = "LHC22o_apass7_MB_small";
 std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/AnalysisResults.root" // anchored to MB
     // "../../AnalysisResults/LHC24f3b/selMC/AnalysisResults.root" // MCP: selMC w/o zvtx
-    // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/AnalysisResults.root" // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
+    "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/AnalysisResults.root" // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/TrackTuner_Const200GeV/AnalysisResults.root" // track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const200GeV/AreaBased/AnalysisResults.root" // Area-based method, no Sparse, track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/AnalysisResults.root" // Area-based method, do Sparse, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtxGeV, MCP: selMC w/o zvtx
@@ -82,14 +80,6 @@ std::vector<TString> fileNames = {
     // Etc. for tests
     // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/DetPtLarger0GeV/AnalysisResults.root" // det jet pT > 0 GeV, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
     // "../../../data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/CombinedResults.root" // [QM2025] Data, const < 100 GeV, UE-subtracted
-
-    "../../AnalysisResults/LHC24g4/selMC/trackTuner/Track100GeV/AnalysisResults.root", // jet-jet MC
-    "../AnalysisResults_MB-gap-2.root",
-    "../AnalysisResults_MB-gap-3.root",
-    "../AnalysisResults_MB-gap-4.root",
-    "../AnalysisResults_MB-gap-5.root",
-    "../AnalysisResults_MBgap5_Many_First.root",
-    "../AnalysisResults_MB-gap-6.root"
 
     // systematic uncertainties below:
     // "../../AnalysisResults/LHC24f3b/selMC/trackingEfficiency/AnalysisResults.root" // trackingEfficiency 97% uncertainty: track pT < 100 GeV, most recent pass7 anchored to MB, MCP: selMC w/o zvtx
@@ -101,24 +91,15 @@ const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24f3b/selMC/
 const TString DataCollCounterFile = "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/AnalysisResults.root";
 const TString DataDatasetName = "MB MC (LHC24f3b)";
 // const TString MCDatasetName = "MC (LHC24f3b)";
-const TString PlotSaveName = "MB-gaps-2to6";
+const TString PlotSaveName = "HP-Approval_LHC22-pass7_LHC24f3b";
 const std::vector<TString> histNames = {
   // "LHC22-pass7-small_sel8_selMC_selectedWindow_woUEsub"
   // "LHC22-pass7-small_Track100GeV_sel8_selMC_selectedWindow_woUEsub"
   // "LHC22-pass7-small_Track100GeV_sel8_selMC_selectedWindow_wUEsub"
-  // "HP-Approval_LHC22-pass7_LHC24f3b"
+  "HP-Approval_LHC22-pass7_LHC24f3b"
   // "LHC22-pass7-small_sel8_LHC24f3b_Track100GeV_selMC_selectedWindow_woUEsub_trackTuner"
   // "LHC22-pass7-small_sel8_LHC24g4_trackTuner_selMC_selectedWindow_woUEsub" // TrackTuner w/ track pT < 100 GeV
   // "LHC22-pass7-small_sel8_LHC24g4_selMC_selectedWindow_woUEsub"
-
-  // etc.
-  "Jet-Jet (LHC24g4)",
-  "MB-gap-2",
-  "MB-gap-3",
-  "MB-gap-4",
-  "MB-gap-5",
-  "MB-gap-5-Many_First",
-  "MB-gap-6"
 };
 const char* trackselection = "globalTracks";
 const TString MakeDirName = "plots/AN_Charged-particle-jet-cross-section-in-pp-collisions-at-13.6-TeV/Figures/" + PlotSaveName;
