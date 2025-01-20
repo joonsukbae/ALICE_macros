@@ -27,6 +27,62 @@ TH1 *DrawJetPt(const char *fileName, const char *histName, const char *Obj, Doub
 
   return JetPt;
 }
+TH1D *DrawLeadingJetPtRho(const char *fileName, const char *histName, const char *ObjRho,const char *ObjRhoM, Double_t Nevts,
+               TLegend *legend, Color_t colorID, Int_t i = 0,
+               const char *Dir = nullptr) {
+    // h3_centrality_leadingjet_pt_rho
+    // h3_centrality_leadingjet_pt_rhoM
+  auto file = TFile::Open(fileName, "open");
+  TH2 *h2LeadingJetPtRho = (TH2 *)file->Get(Form("%s/%s", Dir, ObjRho));
+  TProfile* profileLeadingJetPtRho = h2LeadingJetPtRho->ProfileX("LeadingJetPtRho");
+  TH1D* LeadingJetPtRho = profileLeadingJetPtRho->ProjectionX("LeadingJetPtRhoProj");
+
+  TH2 *h2LeadingJetPtRhoM = (TH2 *)file->Get(Form("%s/%s", Dir, ObjRhoM));
+  TProfile* profileLeadingJetPtRhoM = h2LeadingJetPtRhoM->ProfileX("LeadingJetPtRhoM");
+  TH1D* LeadingJetPtRhoM = profileLeadingJetPtRhoM->ProjectionX("LeadingJetPtRhoMProj");
+
+  // if (REBINON) {
+  //   LeadingJetPtRho = LeadingJetPtRho->Rebin(nptBins, Form("LeadingJetPtRho_%s", histName), ptbin);
+  //   LeadingJetPtRhoM = LeadingJetPtRhoM->Rebin(nptBins, Form("LeadingJetPtRhoM%s", histName), ptbin);
+  // }
+  legend->AddEntry(LeadingJetPtRho, histName, "pl");
+  // legend->AddEntry(LeadingJetPtRhoM, "Rhosparse Median", "pl");
+  hset(*LeadingJetPtRho, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 1.2, 1.3, 0.05, 0.05, 0.01, 0.01, 0.05,
+       0.05, 510, 510);
+  // hset(*LeadingJetPtRhoM, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 1.2, 1.3, 0.05, 0.05, 0.01, 0.01, 0.05,
+      //  0.05, 510, 510);
+  // auto [yMin, yMax] = getYAxisRange(LeadingJetPtRho, Nevts, PlotPtMin, PlotPtMax); 
+  double yMin = 0;
+  double yMax = 2;
+  hoptset(*LeadingJetPtRho, 0, colorID, 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+  hoptset(*LeadingJetPtRhoM, 0, kBlue+1, 0, 50, yMin, yMax, 1, 1, 2, 20);
+  LeadingJetPtRho->Draw("esame");
+  // LeadingJetPtRhoM->Draw("esame");
+
+  return LeadingJetPtRho;
+}
+TH1 *DrawDeltaRandomCone(const char *fileName, const char *histName, const char *ObjRandomCone, const char *ObjRhoRandomConeRandomTrackDirection, const char *ObjRhoRandomConeRandomTrackDirectionWoLeadingJet, const char *ObjRhoRandomConeRandomTrackDirectionWoTwoLeadingJets, Double_t Nevts,
+               TLegend *legend, Color_t colorID, Int_t i = 0,
+               const char *Dir = nullptr) {
+    // h2_centrality_rhorandomcone
+    // h2_centrality_rhorandomconerandomtrackdirection
+  auto file = TFile::Open(fileName, "open");
+  TH2 *h2DeltaRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, ObjRandomCone));
+  TH1 *hDeltaRandomCone = h2DeltaRandomCone->ProjectionX("hDeltaRandomCone");
+
+
+  if (REBINON) {
+    hDeltaRandomCone = hDeltaRandomCone->Rebin(nptBins, Form("hDeltaRandomCone_%s", histName), ptbin);
+  }
+  legend->AddEntry(hDeltaRandomCone, "RC");
+  hset(*hDeltaRandomCone, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 0.9, 1.4, 0.05, 0.05, 0.01, 0.01, 0.05,
+       0.05, 510, 510);
+  auto [yMin, yMax] = getYAxisRange(hDeltaRandomCone, Nevts, PlotPtMin, PlotPtMax); 
+  hoptset(*hDeltaRandomCone, 1, colorID, -10, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+  hDeltaRandomCone->Draw("esame");
+
+  return hDeltaRandomCone;
+}
 TH1 *DrawJetPtMCP(const char *fileName, const char *histName, const char *Obj, Double_t Nevts,
                   TLegend *legend, Color_t colorID, Int_t i = 0,
                   const char *Dir = nullptr) {

@@ -20,12 +20,13 @@ using namespace std;
 ///////////////////
 /// plot switch ///
 ///////////////////
-const auto TrackProcess = 1;
-const auto ConstituentProcess = 1;
-const auto JetProcess = 1;
-const auto JetMatchingProcess = 1;
+const auto TrackProcess = 0;
+const auto ConstituentProcess = 0;
+const auto JetProcess = 0;
+const auto JetRhoProcess = 1;
+const auto JetMatchingProcess = 0;
 const bool REBINON = true;
-const bool NORMEVENTS = true; // set normalization factor (true: Nevts, false: Nobs) 
+const bool NORMEVENTS = false; // set normalization factor (true: Nevts, false: Nobs) 
 #define NORMEVENT // set axis titles
 const bool SEL8WINDOW = true; // true: final distribution constraint to sel8, false: final dist. in INEL
 const bool XSECTION = false; // only set final corrected results (true: xsection normalization, false: Nevt normalization)
@@ -79,19 +80,23 @@ std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const200GeV/AreaBased/AnalysisResults.root" // Area-based method, no Sparse, track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/AnalysisResults.root" // Area-based method, do Sparse, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtxGeV, MCP: selMC w/o zvtx
 
-    // Etc. for tests
+    ///// [Etc. for tests]
     // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/DetPtLarger0GeV/AnalysisResults.root" // det jet pT > 0 GeV, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
     // "../../../data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/CombinedResults.root" // [QM2025] Data, const < 100 GeV, UE-subtracted
+    // /// 
+    "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
+    "../AnalysisResults.root" // [UE subtraction QA - rho perpendicular cone]
 
-    "../../AnalysisResults/LHC24g4/selMC/trackTuner/Track100GeV/AnalysisResults.root", // jet-jet MC
-    "../AnalysisResults_MB-gap-2.root",
-    "../AnalysisResults_MB-gap-3.root",
-    "../AnalysisResults_MB-gap-4.root",
-    "../AnalysisResults_MB-gap-5.root",
-    "../AnalysisResults_MBgap5_Many_First.root",
-    "../AnalysisResults_MB-gap-6.root"
+    ///// [jet-jet MC]
+    // "../../AnalysisResults/LHC24g4/selMC/trackTuner/Track100GeV/AnalysisResults.root",
+    // "../AnalysisResults_MB-gap-2.root",
+    // "../AnalysisResults_MB-gap-3.root",
+    // "../AnalysisResults_MB-gap-4.root",
+    // "../AnalysisResults_MB-gap-5.root",
+    // "../AnalysisResults_MBgap5_Many_First.root",
+    // "../AnalysisResults_MB-gap-6.root"
 
-    // systematic uncertainties below:
+    ///// systematic uncertainties below:
     // "../../AnalysisResults/LHC24f3b/selMC/trackingEfficiency/AnalysisResults.root" // trackingEfficiency 97% uncertainty: track pT < 100 GeV, most recent pass7 anchored to MB, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/Track100GeV/AnalysisResults.root" // track pT resolution uncertainty: track pT < 100 GeV, most recent pass7 anchored to MB, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3/selMC_syst/trackingEfficiency/AnalysisResults.root"
@@ -111,14 +116,17 @@ const std::vector<TString> histNames = {
   // "LHC22-pass7-small_sel8_LHC24g4_trackTuner_selMC_selectedWindow_woUEsub" // TrackTuner w/ track pT < 100 GeV
   // "LHC22-pass7-small_sel8_LHC24g4_selMC_selectedWindow_woUEsub"
 
-  // etc.
-  "Jet-Jet (LHC24g4)",
-  "MB-gap-2",
-  "MB-gap-3",
-  "MB-gap-4",
-  "MB-gap-5",
-  "MB-gap-5-Many_First",
-  "MB-gap-6"
+  //// etc.
+  "Perpendicular Cone",
+  "Rhosparse Median"
+
+  // "Jet-Jet (LHC24g4)",
+  // "MB-gap-2",
+  // "MB-gap-3",
+  // "MB-gap-4",
+  // "MB-gap-5",
+  // "MB-gap-5-Many_First",
+  // "MB-gap-6"
 };
 const char* trackselection = "globalTracks";
 const TString MakeDirName = "plots/AN_Charged-particle-jet-cross-section-in-pp-collisions-at-13.6-TeV/Figures/" + PlotSaveName;
@@ -156,6 +164,8 @@ const char *JetEtaObj = "h3_jet_r_jet_pt_jet_eta";
 const char *JetPhiObj = "h3_jet_r_jet_pt_jet_phi";
 const char *JetNtracksObj = "h_jet_ntracks";
 const char *JetAreaObj = "h3_jet_r_jet_pt_jet_area";
+const char *LeadingJetPtRhoObj = "h2_leadingjet_pt_rho";
+const char *LeadingJetPtRhoMObj = "h2_leadingjet_pt_rhoM";
 
 // // UE subtraction (Comparison)
 // const char *TrackPtWUEObj = "h3_centrality_track_pt_rhoareasubtracted";
@@ -170,6 +180,8 @@ const char *JetAreaObj = "h3_jet_r_jet_pt_jet_area";
 // const char *JetPhiWUEObj = "h3_jet_r_jet_pt_jet_phi_rhoareasubtracted";
 // const char *JetNtracksWUEObj = "h_jet_ntracks_rhoareasubtracted";
 // const char *JetAreaWUEObj = "h3_jet_r_jet_pt_jet_area_rhoareasubtracted";
+// const char *LeadingJetPtRhoObj = "h2_leadingjet_pt_rho";
+// const char *LeadingJetPtRhoMObj = "h2_leadingjet_pt_rhoM";
 
 const char *TrackPtWUEObj = TrackPtObj;
 const char *TrackEtaWUEObj = TrackEtaObj;
