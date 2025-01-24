@@ -518,6 +518,34 @@ void DrawHistos(const std::vector<TString> &fileNames,
                                     MakeDirName.Data(), RBIN));}
   }
 
+  if (JetRandomConeProcess == 1) {
+    TCanvas *canDeltaPtRandomCone = new TCanvas("DeltaPtRandomCone", "DeltaPtRandomCone", 800, 700);
+    gStyle->SetOptStat(0);
+    canDeltaPtRandomCone->Draw();
+    optFili(*canDeltaPtRandomCone, 0, 0, 0, 1);
+    setpad(canDeltaPtRandomCone, 0.1, 0.15, 0.15);
+    TLegend *legdeltaptrandomcone =
+        new TLegend(0.537594,0.604444,0.874687,0.884444,NULL,"brNDC");
+    legdeltaptrandomcone->SetTextSize(0.04);
+    legdeltaptrandomcone->SetBorderSize(0);
+    legdeltaptrandomcone->AddEntry("", "LHC24f3 (local, 40 GB)", "");
+
+    // TH1 *LeadingJetPtRhoRatio = DrawLeadingJetPtRho(refPath.Data(), DataDatasetName, LeadingJetPtRhoObj,LeadingJetPtRhoMObj, NeventsData, legleadingjetptrho, ColorPallete[0], 0, DataDirectory[0].Data());
+
+    for (Int_t i = 0; i < std::min(fileNames.size(), histNames.size()); ++i) {
+      TString filePath = mainDir + fileNames[i];
+      if (NORMEVENTS) {
+        NeventsMCD = Nevents(filePath.Data(),Directory[0].Data(),EventObj);
+        std::cout << "NeventsMCD_inDeltaPtRandomConeProcess: " << NeventsMCD << std::endl;
+      }
+      DrawDeltaRandomCone(filePath.Data(), histNames[i].Data(), RandomConeObj, RandomConeRandomTrackDirectionObj, RandomConeWoLeadingJetObj, RandomConeRandomTrackDirectionWoOneLeadingJetsObj, RandomConeRandomTrackDirectionWoTwoLeadingJetsObj,
+      NeventsMCD, legdeltaptrandomcone, ColorPallete[i+1], 0, Directory[0].Data());
+    }
+    legdeltaptrandomcone->Draw();
+    if (DRAWPLOTS) {canDeltaPtRandomCone->Print(Form("%s/DeltaPtRandomCone_%.1f_.pdf",
+                                    MakeDirName.Data(), RBIN));}
+  }
+
   if (JetMatchingProcess == 1) {
     TFile *TSavefile = new TFile("TimeFrameEff.root", "RECREATE");
     for (Int_t i = 0; i < std::min(fileNames.size(), histNames.size()); ++i) {

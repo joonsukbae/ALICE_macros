@@ -61,27 +61,60 @@ TH1D *DrawLeadingJetPtRho(const char *fileName, const char *histName, const char
 
   return LeadingJetPtRho;
 }
-TH1 *DrawDeltaRandomCone(const char *fileName, const char *histName, const char *ObjRandomCone, const char *ObjRhoRandomConeRandomTrackDirection, const char *ObjRhoRandomConeRandomTrackDirectionWoLeadingJet, const char *ObjRhoRandomConeRandomTrackDirectionWoTwoLeadingJets, Double_t Nevts,
+void *DrawDeltaRandomCone(const char *fileName, const char *histName, const char *RandomConeObj, const char *RandomConeRandomTrackDirectionObj, const char *RandomConeWoLeadingJetObj, const char *RandomConeRandomTrackDirectionWoOneLeadingJetsObj, const char *RandomConeRandomTrackDirectionWoTwoLeadingJetsObj, Double_t Nevts,
                TLegend *legend, Color_t colorID, Int_t i = 0,
                const char *Dir = nullptr) {
     // h2_centrality_rhorandomcone
     // h2_centrality_rhorandomconerandomtrackdirection
   auto file = TFile::Open(fileName, "open");
-  TH2 *h2DeltaRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, ObjRandomCone));
-  TH1 *hDeltaRandomCone = h2DeltaRandomCone->ProjectionX("hDeltaRandomCone");
+  // TH2 *h2DeltaRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, RandomConeObj));
+  // TH1 *hDeltaRandomCone = h2DeltaRandomCone->ProjectionY("hDeltaRandomCone");
 
+  const char* objNames[] = {RandomConeObj, RandomConeWoLeadingJetObj, RandomConeRandomTrackDirectionObj, 
+                           RandomConeRandomTrackDirectionWoOneLeadingJetsObj, RandomConeRandomTrackDirectionWoTwoLeadingJetsObj};
+  const char* histLabels[] = {"RC", "RC w/o Leading ", "RC Random Track", "RC w/o One Leading", "RC w/o Two Leading"};
 
-  if (REBINON) {
-    hDeltaRandomCone = hDeltaRandomCone->Rebin(nptBins, Form("hDeltaRandomCone_%s", histName), ptbin);
+  const int nHistograms = sizeof(objNames)/sizeof(objNames[0]);
+  for(int i=0; i<nHistograms; i++) {
+    TH2* h2DeltaRandomCone = (TH2*)file->Get(Form("%s/%s", Dir, objNames[i]));
+    TH1* hist = h2DeltaRandomCone->ProjectionY(Form("hDeltaRandomCone_%d",i));
+    
+    // if(REBINON) {
+    //   hist = hist->Rebin(nptBins, Form("hDeltaRandomCone_rebin_%d",i), ptbin);
+    // }
+    
+    if(i==0) legend->AddEntry("", "Track direction", "");
+    if(i==2) legend->AddEntry("", "Random track direction", "");
+    legend->AddEntry(hist, histLabels[i], "pl");
+    
+    hset(*hist, "#delta #it{p}_{T}^{RC} (GeV/#it{c})", NORMEVENTS? "1/N_{evt} dN/d#it{p}_{T}" : "probability density", 0.9, 1.4, 0.05, 0.05, 0.01, 0.01, 0.05, 0.05, 510, 510);
+    hoptset(*hist, NORMEVENTS? Nevts : 1, ColorPallete[i], -10, 50, 1e-9, 10, ColorPallete[i]==kBlack? 1.2 : 1, 1, 2, ColorPallete[i+1]==kBlack? 21 : 20);
+    
+    hist->SetMarkerStyle(0);
+    hist->Draw("L P e same");
   }
-  legend->AddEntry(hDeltaRandomCone, "RC");
-  hset(*hDeltaRandomCone, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 0.9, 1.4, 0.05, 0.05, 0.01, 0.01, 0.05,
-       0.05, 510, 510);
-  auto [yMin, yMax] = getYAxisRange(hDeltaRandomCone, Nevts, PlotPtMin, PlotPtMax); 
-  hoptset(*hDeltaRandomCone, 1, colorID, -10, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
-  hDeltaRandomCone->Draw("esame");
 
-  return hDeltaRandomCone;
+  // TH2 *h2DeltaRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, RandomConeObj));
+  // TH1 *hDeltaRandomCone = h2DeltaRandomCone->ProjectionY("hDeltaRandomCone");
+
+  // TH2 *h2DeltaRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, RandomConeObj));
+  // TH1 *hDeltaRandomCone = h2DeltaRandomCone->ProjectionY("hDeltaRandomCone");
+
+  // TH2 *h2DeltaRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, RandomConeObj));
+  // TH1 *hDeltaRandomCone = h2DeltaRandomCone->ProjectionY("hDeltaRandomCone");
+
+
+  // if (REBINON) {
+  //   hDeltaRandomCone = hDeltaRandomCone->Rebin(nptBins, Form("hDeltaRandomCone_%s", histName), ptbin);
+  // }
+  // legend->AddEntry(hDeltaRandomCone, "RC");
+  // hset(*hDeltaRandomCone, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 0.9, 1.4, 0.05, 0.05, 0.01, 0.01, 0.05,
+  //      0.05, 510, 510);
+  // auto [yMin, yMax] = getYAxisRange(hDeltaRandomCone, Nevts, PlotPtMin, PlotPtMax); 
+  // hoptset(*hDeltaRandomCone, 1, colorID, -10, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+  // hDeltaRandomCone->Draw("esame");
+
+  return 0;
 }
 TH1 *DrawJetPtMCP(const char *fileName, const char *histName, const char *Obj, Double_t Nevts,
                   TLegend *legend, Color_t colorID, Int_t i = 0,

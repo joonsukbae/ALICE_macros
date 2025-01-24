@@ -23,7 +23,8 @@ using namespace std;
 const auto TrackProcess = 0;
 const auto ConstituentProcess = 0;
 const auto JetProcess = 0;
-const auto JetRhoProcess = 1;
+const auto JetRhoProcess = 0;
+const auto JetRandomConeProcess = 1;
 const auto JetMatchingProcess = 0;
 const bool REBINON = true;
 const bool NORMEVENTS = false; // set normalization factor (true: Nevts, false: Nobs) 
@@ -84,8 +85,9 @@ std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/DetPtLarger0GeV/AnalysisResults.root" // det jet pT > 0 GeV, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
     // "../../../data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/CombinedResults.root" // [QM2025] Data, const < 100 GeV, UE-subtracted
     // /// 
-    "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
-    "../AnalysisResults.root" // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
+    // "../AnalysisResults_UEQAtestPerp.root" // [UE subtraction QA - rho perpendicular cone]
+    "../AnalysisResults_UEQAtestRandomeCone.root" // [UE subtraction QA - random cone]
 
     ///// [jet-jet MC]
     // "../../AnalysisResults/LHC24g4/selMC/trackTuner/Track100GeV/AnalysisResults.root",
@@ -166,6 +168,11 @@ const char *JetNtracksObj = "h_jet_ntracks";
 const char *JetAreaObj = "h3_jet_r_jet_pt_jet_area";
 const char *LeadingJetPtRhoObj = "h2_leadingjet_pt_rho";
 const char *LeadingJetPtRhoMObj = "h2_leadingjet_pt_rhoM";
+const char *RandomConeObj = "h2_centrality_rhorandomcone";
+const char *RandomConeRandomTrackDirectionObj = "h2_centrality_rhorandomconerandomtrackdirection";
+const char *RandomConeWoLeadingJetObj = "h2_centrality_rhorandomconewithoutleadingjet";
+const char *RandomConeRandomTrackDirectionWoOneLeadingJetsObj = "h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets";
+const char *RandomConeRandomTrackDirectionWoTwoLeadingJetsObj = "h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets";
 
 // // UE subtraction (Comparison)
 // const char *TrackPtWUEObj = "h3_centrality_track_pt_rhoareasubtracted";
