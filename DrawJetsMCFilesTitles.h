@@ -61,7 +61,7 @@ const TString refDir =
     // "../../jets/data/jetfinderQA/AnalysisResults/LHC22o_apass7_MB_small/sel8Full_globalTracks/";
 
     // "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/"; // const < 200 GeV
-    "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/Track100GeV/"; // [HP2024] const < 100 GeV
+    "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/Track100GeV/"; // [HP2024] const < 100 GeV (https://alimonitor.cern.ch/hyperloop/train-run/261733/general)
     // "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/"; // [QM2025] const < 100 GeV, UE-subtracted
     
 // TString refFile = "AnalysisResults.root";
@@ -72,7 +72,7 @@ const char *refName = "LHC22o_apass7_MB_small";
 std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/AnalysisResults.root" // anchored to MB
     // "../../AnalysisResults/LHC24f3b/selMC/AnalysisResults.root" // MCP: selMC w/o zvtx
-    "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/AnalysisResults.root" // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
+    "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/AnalysisResults.root" // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx (https://alimonitor.cern.ch/hyperloop/train-run/261768/general)
     // "../../AnalysisResults/LHC24f3b/selMC/TrackTuner_Const200GeV/AnalysisResults.root" // track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const200GeV/AreaBased/AnalysisResults.root" // Area-based method, no Sparse, track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/AnalysisResults.root" // Area-based method, do Sparse, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtxGeV, MCP: selMC w/o zvtx
