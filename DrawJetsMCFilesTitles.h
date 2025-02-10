@@ -23,8 +23,8 @@ using namespace std;
 const auto TrackProcess = 0;
 const auto ConstituentProcess = 0;
 const auto JetProcess = 0;
-const auto JetRhoProcess = 0;
-const auto JetRandomConeProcess = 1;
+const auto JetRhoProcess = 1;
+const auto JetRandomConeProcess = 0;
 const auto JetMatchingProcess = 0;
 const bool REBINON = true;
 const bool NORMEVENTS = false; // set normalization factor (true: Nevts, false: Nobs) 
@@ -85,9 +85,10 @@ std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/DetPtLarger0GeV/AnalysisResults.root" // det jet pT > 0 GeV, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
     // "../../../data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/CombinedResults.root" // [QM2025] Data, const < 100 GeV, UE-subtracted
     // /// 
-    // "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
-    // "../AnalysisResults_UEQAtestPerp.root" // [UE subtraction QA - rho perpendicular cone]
-    "../AnalysisResults_UEQAtestRandomeCone.root" // [UE subtraction QA - random cone]
+    "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
+    "../AnalysisResults_perpRho_local.root", // [UE subtraction QA - rho perpendicular cone]
+    "../AnalysisResults_UEQAtestPerp.root" // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_UEQAtestRandomeCone.root" // [UE subtraction QA - random cone]
 
     ///// [jet-jet MC]
     // "../../AnalysisResults/LHC24g4/selMC/trackTuner/Track100GeV/AnalysisResults.root",
@@ -119,8 +120,9 @@ const std::vector<TString> histNames = {
   // "LHC22-pass7-small_sel8_LHC24g4_selMC_selectedWindow_woUEsub"
 
   //// etc.
-  "Perpendicular Cone",
-  "Rhosparse Median"
+  "Rhosparse Median",
+  "Perpendicular Cone Af",
+  "Perpendicular Cone Bf"
 
   // "Jet-Jet (LHC24g4)",
   // "MB-gap-2",
