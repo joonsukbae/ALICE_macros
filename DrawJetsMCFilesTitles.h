@@ -87,7 +87,7 @@ std::vector<TString> fileNames = {
     // /// 
     "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
     "../AnalysisResults_perpRho_local.root", // [UE subtraction QA - rho perpendicular cone]
-    "../AnalysisResults_UEQAtestPerp.root" // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_UEQAtestPerp.root" // [UE subtraction QA - rho perpendicular cone]
     // "../AnalysisResults_UEQAtestRandomeCone.root" // [UE subtraction QA - random cone]
 
     ///// [jet-jet MC]
@@ -109,7 +109,7 @@ const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24f3b/selMC/
 const TString DataCollCounterFile = "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/AnalysisResults.root";
 const TString DataDatasetName = "MB MC (LHC24f3b)";
 // const TString MCDatasetName = "MC (LHC24f3b)";
-const TString PlotSaveName = "MB-gaps-2to6";
+const TString PlotSaveName = "UE_subtraction_QA";
 const std::vector<TString> histNames = {
   // "LHC22-pass7-small_sel8_selMC_selectedWindow_woUEsub"
   // "LHC22-pass7-small_Track100GeV_sel8_selMC_selectedWindow_woUEsub"
@@ -121,8 +121,8 @@ const std::vector<TString> histNames = {
 
   //// etc.
   "Rhosparse Median",
-  "Perpendicular Cone Af",
-  "Perpendicular Cone Bf"
+  "Perpendicular Cone",
+  // "Perpendicular Cone Bf"
 
   // "Jet-Jet (LHC24g4)",
   // "MB-gap-2",

@@ -53,7 +53,7 @@ TH1D *DrawLeadingJetPtRho(const char *fileName, const char *histName, const char
       //  0.05, 510, 510);
   // auto [yMin, yMax] = getYAxisRange(LeadingJetPtRho, Nevts, PlotPtMin, PlotPtMax); 
   double yMin = 0;
-  double yMax = 2;
+  double yMax = 2.5;
   hoptset(*LeadingJetPtRho, 0, colorID, 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
   hoptset(*LeadingJetPtRhoM, 0, kBlue+1, 0, 50, yMin, yMax, 1, 1, 2, 20);
   LeadingJetPtRho->Draw("esame");
