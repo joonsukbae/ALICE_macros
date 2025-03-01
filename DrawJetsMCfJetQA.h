@@ -27,39 +27,92 @@ TH1 *DrawJetPt(const char *fileName, const char *histName, const char *Obj, Doub
 
   return JetPt;
 }
-TH1D *DrawLeadingJetPtRho(const char *fileName, const char *histName, const char *ObjRho,const char *ObjRhoM, Double_t Nevts,
+TH1D *DrawLeadingJetPtRho(const char *fileName, const char *histName, Double_t Nevts,
                TLegend *legend, Color_t colorID, Int_t i = 0,
                const char *Dir = nullptr) {
-    // h3_centrality_leadingjet_pt_rho
-    // h3_centrality_leadingjet_pt_rhoM
   auto file = TFile::Open(fileName, "open");
-  TH2 *h2LeadingJetPtRho = (TH2 *)file->Get(Form("%s/%s", Dir, ObjRho));
-  TProfile* profileLeadingJetPtRho = h2LeadingJetPtRho->ProfileX("LeadingJetPtRho");
-  TH1D* LeadingJetPtRho = profileLeadingJetPtRho->ProjectionX("LeadingJetPtRhoProj");
+  
+  TString fileNameStr(fileName);
+  // bool isR02File = true;
+  // bool isR04File = true; 
+  bool isR02File = fileNameStr.Contains("02");
+  bool isR04File = fileNameStr.Contains("04");
+  
+  TH1D* LeadingJetPtRhoAreaSparse = nullptr;
+  
+  // R02 파일일 때만 AreaSparse 방법 그리기
+  if (isR02File) {
+    TH2 *h2LeadingJetPtRhoAreaSparse = (TH2 *)file->Get(Form("%s/%s", Dir, LeadingJetPtRhoAreaSparseObj));
+    TProfile* profileLeadingJetPtRhoAreaSparse = h2LeadingJetPtRhoAreaSparse->ProfileX("LeadingJetPtRhoAreaSparse");
+    LeadingJetPtRhoAreaSparse = profileLeadingJetPtRhoAreaSparse->ProjectionX("LeadingJetPtRhoAreaSparseProj");
+    
+    legend->AddEntry(LeadingJetPtRhoAreaSparse, "Area Sparse", "pl");
+  }
 
-  TH2 *h2LeadingJetPtRhoM = (TH2 *)file->Get(Form("%s/%s", Dir, ObjRhoM));
-  TProfile* profileLeadingJetPtRhoM = h2LeadingJetPtRhoM->ProfileX("LeadingJetPtRhoM");
-  TH1D* LeadingJetPtRhoM = profileLeadingJetPtRhoM->ProjectionX("LeadingJetPtRhoMProj");
+  // R04 파일일 때만 나머지 방법들 그리기 
+  TH1D *LeadingJetPtRhoAvg = nullptr;
+  TH1D *LeadingJetPtRhoMinus = nullptr;
+  TH1D *LeadingJetPtRhoPlus = nullptr;
+  TH1D *LeadingJetPtRho3 = nullptr;
+  TH1D *LeadingJetPtRhoRandomCone = nullptr;
 
-  // if (REBINON) {
-  //   LeadingJetPtRho = LeadingJetPtRho->Rebin(nptBins, Form("LeadingJetPtRho_%s", histName), ptbin);
-  //   LeadingJetPtRhoM = LeadingJetPtRhoM->Rebin(nptBins, Form("LeadingJetPtRhoM%s", histName), ptbin);
-  // }
-  legend->AddEntry(LeadingJetPtRho, histName, "pl");
-  // legend->AddEntry(LeadingJetPtRhoM, "Rhosparse Median", "pl");
-  hset(*LeadingJetPtRho, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 1.2, 1.3, 0.05, 0.05, 0.01, 0.01, 0.05,
-       0.05, 510, 510);
-  // hset(*LeadingJetPtRhoM, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 1.2, 1.3, 0.05, 0.05, 0.01, 0.01, 0.05,
-      //  0.05, 510, 510);
-  // auto [yMin, yMax] = getYAxisRange(LeadingJetPtRho, Nevts, PlotPtMin, PlotPtMax); 
+  if (isR04File) {
+    // Perp. Average
+    TH2 *h2LeadingJetPtRhoAvg = (TH2 *)file->Get(Form("%s/%s", Dir, LeadingJetPtRhoAvgObj));
+    TProfile* profileLeadingJetPtRhoAvg = h2LeadingJetPtRhoAvg->ProfileX("LeadingJetPtRhoAvg");
+    LeadingJetPtRhoAvg = profileLeadingJetPtRhoAvg->ProjectionX("LeadingJetPtRhoAvgProj");
+
+    // Minus
+    TH2 *h2LeadingJetPtRhoMinus = (TH2 *)file->Get(Form("%s/%s", Dir, LeadingJetPtRhoMinusObj));
+    TProfile* profileLeadingJetPtRhoMinus = h2LeadingJetPtRhoMinus->ProfileX("LeadingJetPtRhoMinus");
+    LeadingJetPtRhoMinus = profileLeadingJetPtRhoMinus->ProjectionX("LeadingJetPtRhoMinusProj");
+
+    // Plus
+    TH2 *h2LeadingJetPtRhoPlus = (TH2 *)file->Get(Form("%s/%s", Dir, LeadingJetPtRhoPlusObj));
+    TProfile* profileLeadingJetPtRhoPlus = h2LeadingJetPtRhoPlus->ProfileX("LeadingJetPtRhoPlus");
+    LeadingJetPtRhoPlus = profileLeadingJetPtRhoPlus->ProjectionX("LeadingJetPtRhoPlusProj");
+
+    // Rho3
+    TH2 *h2LeadingJetPtRho3 = (TH2 *)file->Get(Form("%s/%s", Dir, LeadingJetPtRho3Obj));
+    TProfile* profileLeadingJetPtRho3 = h2LeadingJetPtRho3->ProfileX("LeadingJetPtRho3");
+    LeadingJetPtRho3 = profileLeadingJetPtRho3->ProjectionX("LeadingJetPtRho3Proj");
+
+    // RandomCone
+    TH2 *h2LeadingJetPtRhoRandomCone = (TH2 *)file->Get(Form("%s/%s", Dir, LeadingJetPtRhoRandomConeObj));
+    TProfile* profileLeadingJetPtRhoRandomCone = h2LeadingJetPtRhoRandomCone->ProfileX("LeadingJetPtRhoRandomCone");
+    LeadingJetPtRhoRandomCone = profileLeadingJetPtRhoRandomCone->ProjectionX("LeadingJetPtRhoRandomConeProj");
+
+    legend->AddEntry(LeadingJetPtRhoAvg, "Perp. Avg.", "pl"); 
+    legend->AddEntry(LeadingJetPtRhoMinus, "Perp. Minus", "pl");
+    legend->AddEntry(LeadingJetPtRhoPlus, "Perp. Plus", "pl");
+    legend->AddEntry(LeadingJetPtRho3, "Perp. triple cones", "pl");
+    legend->AddEntry(LeadingJetPtRhoRandomCone, "Random Cone", "pl");
+  }
+
   double yMin = 0;
   double yMax = 2.5;
-  hoptset(*LeadingJetPtRho, 0, colorID, 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
-  hoptset(*LeadingJetPtRhoM, 0, kBlue+1, 0, 50, yMin, yMax, 1, 1, 2, 20);
-  LeadingJetPtRho->Draw("esame");
-  // LeadingJetPtRhoM->Draw("esame");
 
-  return LeadingJetPtRho;
+  if (isR02File) {
+    hset(*LeadingJetPtRhoAreaSparse, "#it{p}_{T, leading jet} (GeV/#it{c})", "<#rho_{UE}>", 1.2, 1.3, 0.05, 0.05, 0.01, 0.01, 0.05, 0.05, 510, 510);
+    hoptset(*LeadingJetPtRhoAreaSparse, 0, ColorPallete[0], 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+    LeadingJetPtRhoAreaSparse->Draw("esame");
+  }
+
+  if (isR04File) {
+    hoptset(*LeadingJetPtRhoAvg, 0, ColorPallete[1], 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+    hoptset(*LeadingJetPtRhoMinus, 0, ColorPallete[2], 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+    hoptset(*LeadingJetPtRhoPlus, 0, ColorPallete[3], 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+    hoptset(*LeadingJetPtRho3, 0, ColorPallete[4], 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+    hoptset(*LeadingJetPtRhoRandomCone, 0, ColorPallete[5], 0, 50, yMin, yMax, colorID==kBlack? 1.2 : 1, 1, 2, colorID==kBlack? 21 : 20);
+
+    LeadingJetPtRhoAvg->Draw("esame");
+    LeadingJetPtRhoMinus->Draw("esame"); 
+    LeadingJetPtRhoPlus->Draw("esame");
+    LeadingJetPtRho3->Draw("esame");
+    LeadingJetPtRhoRandomCone->Draw("esame");
+  }
+
+  return isR02File ? LeadingJetPtRhoAreaSparse : LeadingJetPtRhoAvg;
 }
 void *DrawDeltaRandomCone(const char *fileName, const char *histName, const char *RandomConeObj, const char *RandomConeRandomTrackDirectionObj, const char *RandomConeWoLeadingJetObj, const char *RandomConeRandomTrackDirectionWoOneLeadingJetsObj, const char *RandomConeRandomTrackDirectionWoTwoLeadingJetsObj, Double_t Nevts,
                TLegend *legend, Color_t colorID, Int_t i = 0,

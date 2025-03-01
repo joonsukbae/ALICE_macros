@@ -498,10 +498,10 @@ void DrawHistos(const std::vector<TString> &fileNames,
     canLeadingJetPtRho->Draw();
     setpad(canLeadingJetPtRho, 0.1, 0.15, 0.15);
     TLegend *legleadingjetptrho =
-        new TLegend(0.50961,0.2,0.847071,0.353478,NULL,"brNDC");
+        new TLegend(0.521303,0.155556,0.858396,0.391111,NULL,"brNDC");
     legleadingjetptrho->SetTextSize(0.04);
     legleadingjetptrho->SetBorderSize(0);
-    legleadingjetptrho->AddEntry("", "LHC24f3 (local, 40 GB)", "");
+    legleadingjetptrho->AddEntry("", DataDatasetName, "");
 
     // TH1 *LeadingJetPtRhoRatio = DrawLeadingJetPtRho(refPath.Data(), DataDatasetName, LeadingJetPtRhoObj,LeadingJetPtRhoMObj, NeventsData, legleadingjetptrho, ColorPallete[0], 0, DataDirectory[0].Data());
 
@@ -511,10 +511,10 @@ void DrawHistos(const std::vector<TString> &fileNames,
         NeventsMCD = Nevents(filePath.Data(),Directory[0].Data(),EventObj);
         std::cout << "NeventsMCD_inLeadingJetPtRhoProcess: " << NeventsMCD << std::endl;
       }
-      DrawLeadingJetPtRho(filePath.Data(), histNames[i].Data(), LeadingJetPtRhoObj, LeadingJetPtRhoMObj, NeventsMCD, legleadingjetptrho, ColorPallete[i+1], 0, Directory[0].Data());
+      DrawLeadingJetPtRho(filePath.Data(), histNames[i].Data(), NeventsMCD, legleadingjetptrho, ColorPallete[i+1], 0, Directory[0].Data());
     }
     legleadingjetptrho->Draw();
-    if (DRAWPLOTS) {canLeadingJetPtRho->Print(Form("%s/LeadingJetPtRho_R%.1f_.pdf",
+    if (DRAWPLOTS) {canLeadingJetPtRho->Print(Form("%s/LeadingJetPtRho_R%.1f.pdf",
                                     MakeDirName.Data(), RBIN));}
   }
 

@@ -85,8 +85,15 @@ std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/DetPtLarger0GeV/AnalysisResults.root" // det jet pT > 0 GeV, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
     // "../../../data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/CombinedResults.root" // [QM2025] Data, const < 100 GeV, UE-subtracted
     // /// 
-    "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
-    "../AnalysisResults_perpRho_local.root", // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_UEQAtest1.root", // [UE subtraction QA - rho sparse median]
+    // "../AnalysisResults_perpRho_local.root", // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_minusPerpendicularCone_local.root", // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_plusPerpendicularCone_local.root", // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_perp3Rho_local.root", // [UE subtraction QA - rho perpendicular cone]
+    // // "../AnalysisResults_perp3Rho_local2.root", // [UE subtraction QA - rho perpendicular cone]
+    // "../AnalysisResults_randomCone_local.root" // [UE subtraction QA - rho random cone]
+    "../AnalysisResults_estimateRho_R02_local.root",
+    "../AnalysisResults_estimateRho_R04_local.root"
     // "../AnalysisResults_UEQAtestPerp.root" // [UE subtraction QA - rho perpendicular cone]
     // "../AnalysisResults_UEQAtestRandomeCone.root" // [UE subtraction QA - random cone]
 
@@ -120,8 +127,15 @@ const std::vector<TString> histNames = {
   // "LHC22-pass7-small_sel8_LHC24g4_selMC_selectedWindow_woUEsub"
 
   //// etc.
-  "Rhosparse Median",
-  "Perpendicular Cone",
+  "UE subtraction",
+  "UE subtraction"
+  // "Rhosparse Median",
+  // "Perpendicular",
+  // "-2/Pi Perpendicular",
+  // "+2/Pi Perpendicular",
+  // "3 Perpendicular Cone",
+  // "3 Perpendicular Cone 2",
+  // "Random Cone"
   // "Perpendicular Cone Bf"
 
   // "Jet-Jet (LHC24g4)",
@@ -168,8 +182,12 @@ const char *JetEtaObj = "h3_jet_r_jet_pt_jet_eta";
 const char *JetPhiObj = "h3_jet_r_jet_pt_jet_phi";
 const char *JetNtracksObj = "h_jet_ntracks";
 const char *JetAreaObj = "h3_jet_r_jet_pt_jet_area";
-const char *LeadingJetPtRhoObj = "h2_leadingjet_pt_rho";
-const char *LeadingJetPtRhoMObj = "h2_leadingjet_pt_rhoM";
+const char *LeadingJetPtRhoAreaSparseObj = "h2_leadingjet_pt_rho";
+const char *LeadingJetPtRhoAvgObj = "h2_leadingjet_pt_rhoAvg";
+const char *LeadingJetPtRhoMinusObj = "h2_leadingjet_pt_rhoMinus"; 
+const char *LeadingJetPtRhoPlusObj = "h2_leadingjet_pt_rhoPlus";
+const char *LeadingJetPtRho3Obj = "h2_leadingjet_pt_rho3";
+const char *LeadingJetPtRhoRandomConeObj = "h2_leadingjet_pt_rho_rhorandomconerandomtrackdirectionwithoutoneleadingjets";
 const char *RandomConeObj = "h2_centrality_rhorandomcone";
 const char *RandomConeRandomTrackDirectionObj = "h2_centrality_rhorandomconerandomtrackdirection";
 const char *RandomConeWoLeadingJetObj = "h2_centrality_rhorandomconewithoutleadingjet";
