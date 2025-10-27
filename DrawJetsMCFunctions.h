@@ -545,6 +545,56 @@ void DrawMultipleSources(std::vector<TH1*>& hSysts, TH1* hSystResult) {
     if (SYSTUNFOLD) {
         cSources->SaveAs(Form("%s/SystematicUncertaintySources.pdf", MakeDirName.Data()));
         cSources->SaveAs(Form("%s/SystematicUncertaintySources.root", MakeDirName.Data()));
+        
+        // Save individual sources to ROOT file for easy access
+        TFile* sourceFile = TFile::Open(Form("%s/SystematicUncertaintySources.root", MakeDirName.Data()), "UPDATE");
+        if (sourceFile && sourceFile->IsOpen()) {
+            // Save each individual source histogram
+            for (size_t i = 0; i < newHSysts.size(); ++i) {
+                TH1* hist = newHSysts[i];
+                TString sourceName = SourceNames[i];
+                
+                // Create a clean copy for saving
+                TH1* histCopy = (TH1*)hist->Clone(Form("hSystematic_%s", sourceName.ReplaceAll(" ", "_").ReplaceAll("#", "").Data()));
+                histCopy->SetTitle(Form("Systematic Uncertainty: %s", sourceName.Data()));
+                histCopy->Write();
+                
+                // Also create TGraphError for easier usage
+                int nPoints = hist->GetNbinsX();
+                double* x = new double[nPoints];
+                double* y = new double[nPoints];
+                double* ex = new double[nPoints];
+                double* ey = new double[nPoints];
+                
+                for (int j = 1; j <= nPoints; ++j) {
+                    x[j-1] = hist->GetXaxis()->GetBinCenter(j);
+                    y[j-1] = hist->GetBinContent(j);
+                    ex[j-1] = hist->GetXaxis()->GetBinWidth(j) / 2.0;
+                    ey[j-1] = 0.0; // No error bars for systematic uncertainties
+                }
+                
+                TGraphErrors* graph = new TGraphErrors(nPoints, x, y, ex, ey);
+                graph->SetName(Form("gSystematic_%s", sourceName.ReplaceAll(" ", "_").ReplaceAll("#", "").Data()));
+                graph->SetTitle(Form("Systematic Uncertainty: %s", sourceName.Data()));
+                graph->Write();
+                
+                delete[] x;
+                delete[] y;
+                delete[] ex;
+                delete[] ey;
+                delete graph;
+            }
+            
+            // Save the original input histograms as well
+            for (size_t i = 0; i < hSysts.size(); ++i) {
+                TH1* histCopy = (TH1*)hSysts[i]->Clone(Form("hOriginalSource_%d", (int)i));
+                histCopy->SetTitle(Form("Original Systematic Source %d", (int)i));
+                histCopy->Write();
+            }
+            
+            sourceFile->Close();
+            delete sourceFile;
+        }
     }
 }
 
