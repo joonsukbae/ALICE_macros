@@ -72,8 +72,8 @@ const char *refName = "LHC22o_apass7_MB_small";
 std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/AnalysisResults.root" // anchored to MB
     // "../../AnalysisResults/LHC24f3b/selMC/AnalysisResults.root" // MCP: selMC w/o zvtx
-    // "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/AnalysisResults.root" // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx (https://alimonitor.cern.ch/hyperloop/train-run/261768/general)
-    "../../AnalysisResults/LHC24f3c/TrackTuner/Track100GeV/AnalysisResults.root" // Only anchored to LHC22o (https://alimonitor.cern.ch/hyperloop/train-run/346598/general)
+    "../../AnalysisResults/LHC24f3b/selMC/trackTuner/Track100GeV/AnalysisResults.root" // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx (https://alimonitor.cern.ch/hyperloop/train-run/261768/general)
+    // "../../AnalysisResults/LHC24f3c/TrackTuner/Track100GeV/AnalysisResults.root" // Only anchored to LHC22o (https://alimonitor.cern.ch/hyperloop/train-run/346598/general)
     // "../../AnalysisResults/LHC24f3b/selMC/TrackTuner_Const200GeV/AnalysisResults.root" // track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const200GeV/AreaBased/AnalysisResults.root" // Area-based method, no Sparse, track tuned, track pT < 200 GeV, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3b/selMC/UEsub_TrackTuner_Const100GeV/AreaBasedDoSparse/AnalysisResults.root" // Area-based method, do Sparse, track tuned, track pT < 100 GeV, MCP: selMC w/o zvtxGeV, MCP: selMC w/o zvtx
@@ -87,7 +87,7 @@ std::vector<TString> fileNames = {
     // "../../AnalysisResults/LHC24f3b/selMC/Track100GeV/AnalysisResults.root" // track pT resolution uncertainty: track pT < 100 GeV, most recent pass7 anchored to MB, MCP: selMC w/o zvtx
     // "../../AnalysisResults/LHC24f3/selMC_syst/trackingEfficiency/AnalysisResults.root"
 };
-const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24f3c/trackingEfficiency/AnalysisResults.root"; // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
+const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24f3b/selMC/trackingEfficiency/AnalysisResults.root"; // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
 // const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24g4/selMC/trackEfficiency/AnalysisResults.root";
 const TString DataCollCounterFile = "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/AnalysisResults.root";
 const TString DataDatasetName = "MB MC (LHC24f3b)";
