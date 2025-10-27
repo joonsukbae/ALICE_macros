@@ -90,14 +90,14 @@ std::vector<TString> fileNames = {
 const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24f3b/selMC/trackingEfficiency/AnalysisResults.root"; // [HP2024] track tuned, track pT < 100 GeV, MCP: selMC w/o zvtx
 // const TString McCollCounterFile = "../../jets/mc/AnalysisResults/LHC24g4/selMC/trackEfficiency/AnalysisResults.root";
 const TString DataCollCounterFile = "../../jets/data/AnalysisResults/LHC22o_apass7_minBias_small/sel8/AnalysisResults.root";
-const TString DataDatasetName = "MB MC (LHC24f3b)";
+const TString DataDatasetName = "LHC22o-pass7-small";
 // const TString MCDatasetName = "MC (LHC24f3b)";
-const TString PlotSaveName = "LHC22o-pass7_LHC24f3c";
+const TString PlotSaveName = "LHC22o-pass7_LHC24f3b";
 const std::vector<TString> histNames = {
   // "LHC22-pass7-small_sel8_selMC_selectedWindow_woUEsub"
   // "LHC22-pass7-small_Track100GeV_sel8_selMC_selectedWindow_woUEsub"
   // "LHC22-pass7-small_Track100GeV_sel8_selMC_selectedWindow_wUEsub"
-  "LHC24f3c"
+  "MB MC (LHC24f3b)"
   // "LHC22-pass7-small_sel8_LHC24f3b_Track100GeV_selMC_selectedWindow_woUEsub_trackTuner"
   // "LHC22-pass7-small_sel8_LHC24g4_trackTuner_selMC_selectedWindow_woUEsub" // TrackTuner w/ track pT < 100 GeV
   // "LHC22-pass7-small_sel8_LHC24g4_selMC_selectedWindow_woUEsub"
