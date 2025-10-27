@@ -295,6 +295,7 @@ TH1 *DrawSystematics(TH1 *hstd, TH1 *hsyst, TString FileName, const char *XaxisT
     outFile.close();
 
     pad->C->SaveAs(Form("%s/systematics/SystErr%s.pdf", MakeDirName.Data(), FileName.Data()));
+    pad->C->SaveAs(Form("%s/systematics/SystErr%s.root", MakeDirName.Data(), FileName.Data()));
 }
 
 void DrawJetsMCsyst_trackingEfficiency() {

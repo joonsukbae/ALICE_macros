@@ -544,6 +544,7 @@ void DrawMultipleSources(std::vector<TH1*>& hSysts, TH1* hSystResult) {
     // Save the canvas if the DRAWPLOTS flag is set
     if (SYSTUNFOLD) {
         cSources->SaveAs(Form("%s/SystematicUncertaintySources.pdf", MakeDirName.Data()));
+        cSources->SaveAs(Form("%s/SystematicUncertaintySources.root", MakeDirName.Data()));
     }
 }
 
