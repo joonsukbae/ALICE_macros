@@ -1,2 +1,39 @@
+# === Output files ===
+*.root
+*.pdf
+*.png
+*.eps
+*.svg
+*.jpg
+*.jpeg
+
+# === Build artifacts ===
+*.so
+*.d
+*.o
+*.pcm
+*_C_ACLiC_dict_rdict.pcm
+
+# === Logs and text output ===
+*.log
+*.txt
+
+# === OS / editor junk ===
+.DS_Store
+.claude/
+.cursor/
+.vscode/
+
+# === Specific directories with only output ===
 plots/
-drawJetSpectraCharged/
+drawJetSpectraCharged/plots/
+drawJetSpectraCharged/FinalSystematicUncertainty/POWHEG/
+drawJetSpectraCharged/FinalSystematicUncertainty/Herwig/
+drawJetSpectraCharged/InvariantYieldResults/
+drawJetSpectraCharged/XsectionResults/
+drawJetSpectraCharged/TrackTunerQA/plots/
+drawJetSpectraCharged/DiagnoseRegularization/
+
+# === Backup files ===
+*.backup*
+*.bak

@@ -3,19 +3,19 @@
 #include "TFile.h"
 #include "TStyle.h"
 #include "TLegend.h"
+#include "TString.h"
 //endbk
 #include "TH1D.h"
 #include "TCanvas.h"
 #include "TPad.h"
 #include "TGaxis.h"
 #include "TLatex.h"
-#include "TString.h"
 
 class Filipad2 {
 
     public:
 
-        // ---- Costructor with TString padName ------------
+         // ---- Costructor ------------
         Filipad2(TString padName, int inID=1, float inRelSize=1.1, float inR = 0.4, int inXOffset = 100, int inYOffset=100, float inAspect=0.7, int ichop=5, int ichopPt=3){
             aspektCanvas = inAspect;
             sizeCanvas   = 300*inRelSize;
@@ -25,37 +25,23 @@ class Filipad2 {
             MarginRight  = 0.03;
             MarginTop    = 0.02;
             ID           = inID+ichopPt*100;
-            mcpad        = padName;
+            mcpad        = padName.Data();
             ratio = inR;
-            ratio2 = 0;
+            ratio2 = 0;  // Default: no second ratio pad
 
-            sdxCanvas = inXOffset*((inID-ichopPt)/10.)+10;
-            sdyCanvas = inYOffset*(ichopPt)+10;
+            //sdxCanvas    = inXOffset;
+            int inID0 = inID-1;
+            //sdxCanvas    = inXOffset*(inID0%ichop)+10;
+            //sdyCanvas    = inYOffset*(inID0-inID0%ichop)/ichop+10;
+            //sdyCanvas    = inYOffset*(inID0-inID0%ichop)/ichop+10;
+	    sdxCanvas = inXOffset*((inID-ichopPt)/10.)+10;
+	    sdyCanvas = inYOffset*(ichopPt)+10;
 	
+            //cout <<"sdxCanvas= "<<  sdxCanvas <<" sdyCanvas="<< sdyCanvas <<endl; 
             space        = 0;
         }
-
-        // ---- Costructor with const char* padName ------------
-        Filipad2(const char* padName, int inID=1, float inRelSize=1.1, float inR = 0.4, int inXOffset = 100, int inYOffset=100, float inAspect=0.7, int ichop=5, int ichopPt=3){
-            aspektCanvas = inAspect;
-            sizeCanvas   = 300*inRelSize;
-
-            MarginLeft   = 0.15;
-            MarginBottom = 0.08; 
-            MarginRight  = 0.03;
-            MarginTop    = 0.02;
-            ID           = inID+ichopPt*100;
-            mcpad        = TString(padName);
-            ratio = inR;
-            ratio2 = 0;
-
-            sdxCanvas = inXOffset*((inID-ichopPt)/10.)+10;
-            sdyCanvas = inYOffset*(ichopPt)+10;
-	
-            space        = 0;
-        }
-
-        // ---- Costructor with TString padName and ratio2 (for 3 pads) ------------
+        
+        // ---- Costructor with ratio2 (for 3 pads) ------------
         Filipad2(TString padName, int inID, float inRelSize, float inR, float inR2, int inXOffset, int inYOffset, float inAspect, int ichop, int ichopPt){
             aspektCanvas = inAspect;
             sizeCanvas   = 300*inRelSize;
@@ -65,37 +51,17 @@ class Filipad2 {
             MarginRight  = 0.03;
             MarginTop    = 0.02;
             ID           = inID+ichopPt*100;
-            mcpad        = padName;
+            mcpad        = padName.Data();
             ratio = inR;
             ratio2 = inR2;
 
             sdxCanvas = inXOffset*((inID-ichopPt)/10.)+10;
-            sdyCanvas = inYOffset*(ichopPt)+10;
+	    sdyCanvas = inYOffset*(ichopPt)+10;
 	
             space        = 0;
         }
-
-        // ---- Costructor with const char* padName and ratio2 (for 3 pads) ------------
-        Filipad2(const char* padName, int inID, float inRelSize, float inR, float inR2, int inXOffset, int inYOffset, float inAspect, int ichop, int ichopPt){
-            aspektCanvas = inAspect;
-            sizeCanvas   = 300*inRelSize;
-
-            MarginLeft   = 0.15;
-            MarginBottom = 0.08; 
-            MarginRight  = 0.03;
-            MarginTop    = 0.02;
-            ID           = inID+ichopPt*100;
-            mcpad        = TString(padName);
-            ratio = inR;
-            ratio2 = inR2;
-
-            sdxCanvas = inXOffset*((inID-ichopPt)/10.)+10;
-            sdyCanvas = inYOffset*(ichopPt)+10;
-	
-            space        = 0;
-        }
-
-        // ---- Costructor without padName ------------
+        
+        // ---- Costructor ------------
         Filipad2(int inID=1, float inRelSize=1.1, float inR = 0.4, int inXOffset = 100, int inYOffset=100, float inAspect=0.7, int ichop=5, int ichopPt=3){
             aspektCanvas = inAspect;
             sizeCanvas   = 300*inRelSize;
@@ -107,7 +73,6 @@ class Filipad2 {
             ID           = inID+ichopPt*100;
             mcpad        = Form("c%d",inID);
             ratio = inR;
-            ratio2 = 0;
 
             //sdxCanvas    = inXOffset;
             int inID0 = inID-1;
@@ -265,3 +230,5 @@ class Filipad2 {
         TCanvas *C;
         TVirtualPad *toppad;
 };
+
+

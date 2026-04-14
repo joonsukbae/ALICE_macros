@@ -12,6 +12,26 @@
 ////////////////
 #include <complex>
 #include <vector>
+// forward decl for auto y-range helper
+std::pair<double, double> getYAxisRange(TH1* histogram, Double_t Nevts, double Xmin, double Xmax, double UpMarginFactor, double DownMarginFactor);
+// helper: build variable-bin edges subrange [lowCut, highCut] from a base edges array
+inline std::vector<double> MakeSkimEdges(const double* baseEdges, int nEdges, double lowCut, double highCut) {
+    std::vector<double> out;
+    out.reserve(nEdges);
+    for (int i = 0; i < nEdges; ++i) {
+        const double edge = baseEdges[i];
+        if (edge < lowCut) continue;
+        if (edge > highCut) break;
+        out.push_back(edge);
+    }
+    // ensure at least 2 edges for a valid histogram
+    if (out.size() < 2) {
+        out.clear();
+    }
+    return out;
+}
+
+// predefined skimmed bin edges
 
 void ALICEfigureLegend(const char *FigureLabel, double x11, double y11, double x12, double y12, double x21, double y21, double x22, double y22, double textsize=0.043);
 
@@ -22,63 +42,84 @@ void DrawJetsMC() {
 }
 
 // define fns
-// Nevents: get event counts from h_collisions / h_mccollisions histograms.
-//   ifMCP=0: reco-level events (data or MC det-level)
-//            → bin 3.5 of h_collisions (= "occupancycut" = events passing ALL cuts)
-//   ifMCP=1: MC truth events (particle level)
-//            → bin 5.5 of h_mccollisions (= all cuts passed, matches h_jet_pt_part fill level)
-//   isJJ:   if true, prefer weighted histograms for JJ MC
 Double_t Nevents(const char *fileName, const char *eventDir,
-              const char *eventObj, Int_t ifMCP = 0, bool isJJ = false) {
+              const char *eventObj, Int_t ifMCP = 0) {
+  cout << "[Debug] Nevents called with:" << endl;
+  cout << "  fileName: " << fileName << endl;
+  cout << "  eventDir: " << eventDir << endl;
+  cout << "  eventObj: " << eventObj << endl;
+  cout << "  ifMCP: " << ifMCP << endl;
+  
   auto file = TFile::Open(fileName, "open");
-  if (!file || file->IsZombie()) {
-    std::cerr << "[Error] Cannot open file: " << fileName << std::endl;
-    return 1.0;
+  TH1D *hNevents = nullptr;
+  auto hNeventsTemp1 = (TH1D *)file->Get(Form("%s/%s", eventDir, EventWObj));
+  auto hNeventsTemp2 = (TH1D *)file->Get(Form("%s/%s", eventDir, eventObj));
+  
+  TH1D *hMcPNevts = nullptr;
+  auto hNeventsTemp3 = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_mcColl_counts_weight"));
+  auto hNeventsTemp4 = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_mcColl_counts"));
+
+  cout << "[Debug] Histogram search results:" << endl;
+  cout << "  hNeventsTemp1 (" << eventDir << "/" << EventWObj << "): " << (hNeventsTemp1 ? "FOUND" : "NOT FOUND") << endl;
+  cout << "  hNeventsTemp2 (" << eventDir << "/" << eventObj << "): " << (hNeventsTemp2 ? "FOUND" : "NOT FOUND") << endl;
+  cout << "  hNeventsTemp3 (" << eventDir << "/h_mcColl_counts_weight): " << (hNeventsTemp3 ? "FOUND" : "NOT FOUND") << endl;
+  cout << "  hNeventsTemp4 (" << eventDir << "/h_mcColl_counts): " << (hNeventsTemp4 ? "FOUND" : "NOT FOUND") << endl;
+
+  // Find regular events histogram
+  // Priority: h_collisions_weighted > h_collisions
+  // (JJ MC has both, MB MC has only h_collisions)
+  if (hNeventsTemp1) {
+    hNevents = hNeventsTemp1;
+    cout << "[Debug] Using hNeventsTemp1 (h_collisions_weighted) for regular events" << endl;
+  } else if (hNeventsTemp2) {
+    hNevents = hNeventsTemp2;
+    cout << "[Debug] Using hNeventsTemp2 (h_collisions) for regular events" << endl;
+  }
+
+  // Find MCP events histogram
+  // Priority: h_mcColl_counts_weight > h_mcColl_counts > h_mccollisions
+  // (JJ MC has both _weighted and non-weighted, MB MC has only non-weighted)
+  // h_mccollisions is newer format, but has lower priority than old format
+  auto hNeventsTemp5 = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_mccollisions"));
+  cout << "[Debug] hNeventsTemp5 (" << eventDir << "/h_mccollisions): " << (hNeventsTemp5 ? "FOUND" : "NOT FOUND") << endl;
+  
+  if (hNeventsTemp3) {
+    // Priority 1: h_mcColl_counts_weight (old format, weighted)
+    hMcPNevts = hNeventsTemp3;
+    cout << "[Debug] Using hNeventsTemp3 (h_mcColl_counts_weight) for MCP events" << endl;
+  } else if (hNeventsTemp4) {
+    // Priority 2: h_mcColl_counts (old format, non-weighted)
+    hMcPNevts = hNeventsTemp4;
+    cout << "[Debug] Using hNeventsTemp4 (h_mcColl_counts) for MCP events" << endl;
+  } else if (hNeventsTemp5) {
+    // Priority 3: h_mccollisions (newer format)
+    hMcPNevts = hNeventsTemp5;
+    cout << "[Debug] Using h_mccollisions for MCP events (newer file)" << endl;
   }
 
   Double_t nevents = 0;
   if (ifMCP == 0) {
-    // Reco-level: data or MC detector-level
-    // JJ MC: prefer h_collisions_weighted; data/MB MC: use h_collisions
-    TH1D *hNevents = nullptr;
-    if (isJJ) {
-      hNevents = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_collisions_weighted"));
-    }
-    if (!hNevents) {
-      hNevents = (TH1D *)file->Get(Form("%s/%s", eventDir, eventObj));
-    }
     if (hNevents) {
-      // bin 3.5 = "occupancycut" = events passing ALL cuts (sel8 + centrality + occupancy)
-      nevents = hNevents->GetBinContent(hNevents->FindBin(3.5));
+      Int_t binIndex = hNevents->FindBin(2.5);
+      nevents = hNevents->GetBinContent(binIndex);
+      cout << "[Debug] Regular events - binIndex=" << binIndex << ", nevents=" << nevents << endl;
+    } else {
+      cout << "Regular event histogram not found in " << eventDir << endl;
+      return 1.0; // Return 1.0 instead of 0 to avoid division by zero
     }
   } else if (ifMCP == 1) {
-    // MC truth level: use h_mccollisions (or weighted for JJ MC)
-    TH1D *hMcColl = nullptr;
-    if (isJJ) {
-      hMcColl = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_mccollisions_weighted"));
-    }
-    if (!hMcColl) {
-      hMcColl = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_mccollisions"));
-    }
-    if (!hMcColl) {
-      // Fallback to old format
-      hMcColl = (TH1D *)file->Get(Form("%s/%s", eventDir, "h_mcColl_counts"));
-    }
-    if (hMcColl) {
-      // h_mccollisions: bin 5.5 = all cuts passed (matches h_jet_pt_part fill level)
-      // h_mcColl_counts: bin 4 = equivalent
-      if (TString(hMcColl->GetName()).Contains("mcColl_counts")) {
-        nevents = hMcColl->GetBinContent(4);
-      } else {
-        nevents = hMcColl->GetBinContent(hMcColl->FindBin(5.5));
-      }
+    if (hMcPNevts) {
+      // Use 4th bin (bin index 4, which corresponds to bin center around 3.5-4.5)
+      Int_t binIndex = 4;
+      nevents = hMcPNevts->GetBinContent(binIndex);
+      cout << "[Debug] MCP events - using bin " << binIndex << " (4th bin), nevents=" << nevents << endl;
+    } else {
+      cout << "MCP event histogram not found in " << eventDir << endl;
+      return 1.0; // Return 1.0 instead of 0 to avoid division by zero
     }
   }
-
-  if (nevents <= 0) {
-    std::cerr << "[Warning] Nevents=0 for " << fileName << " ifMCP=" << ifMCP << std::endl;
-    return 1.0;
-  }
+  
+  cout << "[Debug] Final result: nevents=" << nevents << endl;
   file->Close();
   return nevents;
 }
@@ -93,29 +134,110 @@ void PrintHistogramErrors(TH1 *hist) {
 }
 
 TH1 *DrawRatioTH1(TH1 *hNum, TH1 *hDenom) {
-    TH1 *hRatio = (TH1 *)hNum->Clone("hRatio");
-    hRatio->Reset(); 
+    // If bin edges are identical, do simple bin-by-bin ratio via centers
+    auto axN = hNum->GetXaxis();
+    auto axD = hDenom->GetXaxis();
+    const int nN = axN->GetNbins();
+    const int nD = axD->GetNbins();
 
-    for (int i = 1; i <= hNum->GetNbinsX(); i++) {
-        double xCenter = hNum->GetXaxis()->GetBinCenter(i); 
-        double yNum = hNum->GetBinContent(i);
-        double yNumErr = hNum->GetBinError(i); 
+    auto edgesEqual = [&](int nA, TAxis* a, int nB, TAxis* b) -> bool {
+        if (nA != nB) return false;
+        for (int i = 1; i <= nA; ++i) {
+            double loA = a->GetBinLowEdge(i);
+            double hiA = a->GetBinUpEdge(i);
+            double loB = b->GetBinLowEdge(i);
+            double hiB = b->GetBinUpEdge(i);
+            if (std::abs(loA - loB) > 1e-9 || std::abs(hiA - hiB) > 1e-9) return false;
+        }
+        return true;
+    };
 
-        int binDenom = hDenom->GetXaxis()->FindBin(xCenter);
-        double yDenom = hDenom->GetBinContent(binDenom);
+    if (edgesEqual(nN, axN, nD, axD)) {
+        static int ratioCounter = 0;
+        TH1 *hRatio = (TH1 *)hNum->Clone(Form("hRatio_%d", ratioCounter++));
+        hRatio->Reset();
+        for (int i = 1; i <= nN; i++) {
+            double yNum = hNum->GetBinContent(i);
+            double eNum = hNum->GetBinError(i);
+            double yDen = hDenom->GetBinContent(i);
+            double eDen = hDenom->GetBinError(i);
+            if (yDen != 0) {
+                double ratio = yNum / yDen;
+                // propagate only numerator stat like before if denom is ref without errors
+                double ratioErr = (yNum > 0 ? ratio * (eNum / yNum) : 0.0);
+                hRatio->SetBinContent(i, ratio);
+                hRatio->SetBinError(i, ratioErr);
+            } else {
+                hRatio->SetBinContent(i, 0);
+                hRatio->SetBinError(i, 0);
+            }
+        }
+        return hRatio;
+    }
 
-        if (yDenom != 0) {
-            double ratio = yNum / yDenom;
-            double ratioErr = ratio * (yNumErr / yNum); 
+    // Build common bin edges = intersection of both edge sets
+    std::vector<double> eN(nN + 1), eD(nD + 1);
+    for (int i = 0; i <= nN; ++i) eN[i] = (i < nN ? axN->GetBinLowEdge(i + 1) : axN->GetXmax());
+    for (int i = 0; i <= nD; ++i) eD[i] = (i < nD ? axD->GetBinLowEdge(i + 1) : axD->GetXmax());
+    // Ensure first edges are true xmin
+    eN[0] = axN->GetXmin(); eD[0] = axD->GetXmin();
 
+    auto almostEqual = [](double a, double b) { return std::abs(a - b) < 1e-9; };
+    std::vector<double> common;
+    for (double en : eN) {
+        for (double ed : eD) {
+            if (almostEqual(en, ed)) { common.push_back(en); break; }
+        }
+    }
+    // Deduplicate and sort
+    std::sort(common.begin(), common.end());
+    common.erase(std::unique(common.begin(), common.end(), almostEqual), common.end());
+
+    // Need at least 2 edges to form bins; otherwise fallback to center-based mapping
+    if (common.size() < 2) {
+        static int ratioCounter2 = 0;
+        TH1 *hRatio = (TH1 *)hNum->Clone(Form("hRatio_%d", ratioCounter2++));
+        hRatio->Reset();
+        for (int i = 1; i <= nN; i++) {
+            double xCenter = axN->GetBinCenter(i);
+            double yNum = hNum->GetBinContent(i);
+            double eNum = hNum->GetBinError(i);
+            int ib = axD->FindBin(xCenter);
+            double yDen = hDenom->GetBinContent(ib);
+            if (yDen != 0) {
+                double ratio = yNum / yDen;
+                double ratioErr = (yNum > 0 ? ratio * (eNum / yNum) : 0.0);
+                hRatio->SetBinContent(i, ratio);
+                hRatio->SetBinError(i, ratioErr);
+            }
+        }
+        return hRatio;
+    }
+
+    // Rebin both to common edges, then ratio only where edges match
+    int nC = static_cast<int>(common.size()) - 1;
+    // ROOT's Rebin requires non-const pointer
+    std::vector<double> edges = common;
+    TH1 *numC = (TH1 *)hNum->Rebin(nC, Form("%s_rebinned_num", hNum->GetName()), edges.data());
+    TH1 *denC = (TH1 *)hDenom->Rebin(nC, Form("%s_rebinned_den", hDenom->GetName()), edges.data());
+
+    static int ratioCounter3 = 0;
+    TH1 *hRatio = (TH1 *)numC->Clone(Form("hRatio_%d", ratioCounter3++));
+    hRatio->Reset();
+    for (int i = 1; i <= nC; ++i) {
+        double yNum = numC->GetBinContent(i);
+        double eNum = numC->GetBinError(i);
+        double yDen = denC->GetBinContent(i);
+        if (yDen != 0) {
+            double ratio = yNum / yDen;
+            double ratioErr = (yNum > 0 ? ratio * (eNum / yNum) : 0.0);
             hRatio->SetBinContent(i, ratio);
             hRatio->SetBinError(i, ratioErr);
         } else {
             hRatio->SetBinContent(i, 0);
-            hRatio->SetBinError(i, 0); 
+            hRatio->SetBinError(i, 0);
         }
     }
-
     return hRatio;
 }
 
@@ -131,6 +253,7 @@ TH1 *DrawRatio(const char *ratioName, TH1 *refHist, TH1 *testHist,
   // ratioHist->GetYaxis()->SetLimits(Ymin, Ymax);
   ratioHist->SetMarkerColor(colorID);
   ratioHist->SetLineColor(colorID);
+  ratioHist->SetMarkerStyle(testHist->GetMarkerStyle());  // follow numerator
   ratioHist->SetMarkerSize(MarkerSize);
   ratioHist->Draw("esame");
 
@@ -189,7 +312,8 @@ TH1 *MultiplyTH1(TH1 *hDef, TH1 *hComp) {
         hCompare = hComp;
     }
 
-    TH1 *hMultiply = (TH1 *)hBase->Clone("hMultiply");
+    static int multiplyCounter = 0;
+    TH1 *hMultiply = (TH1 *)hBase->Clone(Form("hMultiply_%d", multiplyCounter++));
     hMultiply->Reset();
     
     for (int i = 1; i <= hBase->GetNbinsX(); i++) {
@@ -229,12 +353,13 @@ TH1 *MultiplyTH1(TH1 *hDef, TH1 *hComp) {
 //   return hist;
 // }
 TH1D* GraphToHistogram(TGraphErrors* graph) {
+    static int graphToHistCounter = 0;
     int nPoints = graph->GetN();
     double* xValues = graph->GetX();
     double* yValues = graph->GetY();
     double* yErrors = graph->GetEY();
 
-    TH1D* hist = new TH1D("hist", "Histogram from Graph", nptBins, ptbin);
+    TH1D* hist = new TH1D(Form("hist_%d", graphToHistCounter++), "Histogram from Graph", nptBins, ptbin);
 
     for (int i = 0; i < nPoints; ++i) {
         int bin = hist->FindBin(xValues[i]);
@@ -377,25 +502,53 @@ TH1 *Run2MCgen() {
   TH1* Run2MCGraph = h3Run2MCGraph->Project3D("z");
   // TH1* Run2MCGraph = (TH1 *) Run2MCfile->Get("totJetpt04");
   Run2MCGraph->GetXaxis()->SetRangeUser(1,200);
-  Run2MCGraph = Run2MCGraph->Rebin(nptBinsGen, "run2MCgraphRebined", ptbinGen);
+  static int run2Counter = 0;
+  Run2MCGraph = Run2MCGraph->Rebin(nptBinsGen, Form("run2MCgraphRebined_%d", run2Counter++), ptbinGen);
   Run2MCGraph->Scale(1., "width");
 
   return Run2MCGraph;
 }
-TH1 *GetPYTHIA1360() {
-  // auto File = TFile::Open("../../jets/mc/AnalysisResults/Systematics/13over136GenPythia/1360Charged/AnalysisResults.root", "OPEN");
-  auto File = TFile::Open("../../jets/mc/AnalysisResults/Systematics/13over136GenPythia/1360Charged/AnalysisResults_1360new_highstat.root", "OPEN");
-  TH1* hPythia = (TH1 *) File->Get("hJetPt");
-  TH1* hNevt = (TH1 *) File->Get("hnevent");
-  double nevt = hNevt->GetEntries();
-  hPythia->GetXaxis()->SetRangeUser(1,200);
-  // hPythia = hPythia->Rebin(nptBinsGen, "hPythia", ptbinGen);
-  hPythia->Scale(77.77/nevt, "width");
-
-  return hPythia;
+TH1* GetPYTHIA1360() {
+  std::cerr << "[Info] Loading PYTHIA 13600 data" << std::endl;
+  
+  TFile* fPythia13600 = TFile::Open("/Users/js/alice/pythiaGen/postprocess/results/pp_13600GeV_HardQCD_all_on_UE_ISR_FSR_on/PYTHIA_pp_13600_GeV.root", "read");
+  
+  if (!fPythia13600 || fPythia13600->IsZombie()) {
+    std::cerr << "[Error] Cannot open PYTHIA file" << std::endl;
+    return nullptr;
+  }
+  
+  TH1* hPYTHIA = (TH1*)fPythia13600->Get("hJetPt");
+  if (!hPYTHIA) {
+    std::cerr << "[Error] hJetPt histogram not found in PYTHIA file" << std::endl;
+    fPythia13600->Close();
+    delete fPythia13600;
+    return nullptr;
+  }
+  
+  TH1* hNevents = (TH1*)fPythia13600->Get("hnevent");
+  double Nevts = hNevents ? hNevents->GetBinContent(1) : 100000000.0;
+  
+  const Double_t ptbinPYTHIA[26] = {0,  1,  2,  3,  4,  5,   6,   7,  8,
+    9,  10, 12, 14, 16, 18,  20,  25, 30,
+    40, 50, 60, 70, 85, 100, 140, 200};
+  
+  TH1* hRebinned = hPYTHIA->Rebin(25, "hPYTHIA13600_rebinned", ptbinPYTHIA);
+  hRebinned->SetDirectory(nullptr);
+  
+  hRebinned->Scale(1.0 / 100000000, "width");
+  hRebinned->SetLineColor(kCyan);
+  hRebinned->SetLineStyle(1);
+  hRebinned->SetLineWidth(2);
+  hRebinned->SetMarkerStyle(0);
+  
+  fPythia13600->Close();
+  delete fPythia13600;
+  
+  return hRebinned;
 }
 TH1 *GetPYTHIA1300() {
-  auto File = TFile::Open("../../jets/mc/AnalysisResults/Systematics/13over136GenPythia/1300Charged/AnalysisResults.root", "OPEN");
+  auto File = TFile::Open("~/cernbox/workspace/O2Physics/jets/mc/AnalysisResults/Systematics/13over136GenPythia/1300Charged/AnalysisResults.root", "OPEN");
   TH1* hPythia = (TH1 *) File->Get("hJetPt");
   TH1* hNevt = (TH1 *) File->Get("hnevent");
   double nevt = hNevt->GetEntries();
@@ -408,7 +561,7 @@ TH1 *GetPYTHIA1300() {
 TH1 *GetHERWIG1360() {
   // auto HerwigFile = TFile::Open("../../jets/mc/AnalysisResults/Systematics/AnalysisResults_herwig1360.root", "OPEN");
   // auto HerwigFile = TFile::Open("../../jets/mc/AnalysisResults/Systematics/Herwig/AnalysisResults1360.root", "OPEN"); // twice scale
-  auto HerwigFile = TFile::Open("../../jets/mc/AnalysisResults/Systematics/Herwig/HERWIGMB_1360.root", "OPEN");
+  auto HerwigFile = TFile::Open("~/cernbox/workspace/O2Physics/jets/mc/AnalysisResults/Systematics/Herwig/HERWIGMB_1360.root", "OPEN");
   // TH1* hHerwig = (TH1 *) HerwigFile->Get("hJetPt");
   TH1* hHerwig = (TH1 *) HerwigFile->Get("hJetPtX");
   TH1* hNevt = (TH1 *) HerwigFile->Get("hnevent");
@@ -467,7 +620,8 @@ void calculateQuadratureSum(const std::vector<TH1*>& hSysts, TH1* hSystResult) {
     }
 
     // Step 2: Smoothing using 3-bin moving average
-    TH1* hSystSmoothed = (TH1*) hSysts[0]->Clone("hSystSmoothed");  
+    static int smoothedCounter = 0;
+    TH1* hSystSmoothed = (TH1*) hSysts[0]->Clone(Form("hSystSmoothed_%d", smoothedCounter++));
     
     for (int i = 1; i <= nBins; ++i) {
         double smoothedValue = 0.0;
@@ -512,7 +666,8 @@ void DrawMultipleSources(std::vector<TH1*>& hSysts, TH1* hSystResult) {
     std::vector<TString> SourceNames = {"Tracking efficiency", "Track #it{p}_{T} resolution", "Unfolding", "Normalization", "Secondary particles", "Total uncertainty"};
 
     // Step 1: Create the Unfolding source by combining the histograms [2], [3], and [4] using Quadrature Sum
-    TH1* hUnfolding = (TH1*)hSysts[2]->Clone("hUnfolding");
+    static int unfoldingCounter = 0;
+    TH1* hUnfolding = (TH1*)hSysts[2]->Clone(Form("hUnfolding_%d", unfoldingCounter++));
     hUnfolding->Reset();
 
     // Loop through each bin and calculate the quadrature sum of the unfolding sources
@@ -540,7 +695,8 @@ void DrawMultipleSources(std::vector<TH1*>& hSysts, TH1* hSystResult) {
     }
 
     // Step 3: Convert hSystResult (Total Uncertainty) to percentage
-    auto hSystTotal = (TH1 *) hSystResult->Clone("hSystTotal");
+    static int systTotalCounter = 0;
+    auto hSystTotal = (TH1 *) hSystResult->Clone(Form("hSystTotal_%d", systTotalCounter++));
     for (int bin = 1; bin <= hSystTotal->GetNbinsX(); ++bin) {
         double newValue = (hSystTotal->GetBinContent(bin) - 1.0) * 100;  // Subtract 1 and convert to percentage
         hSystTotal->SetBinContent(bin, newValue);
@@ -664,8 +820,9 @@ TH1 *DrawUnfoldHerwig(TH1 * hPythiaInvY, TH1 *hPythiaTrue, TH1 *hPythiaReco, TH2
   int binMin = hPythiaTrue->GetXaxis()->FindBin(minPT);
   int binMax = hPythiaTrue->GetXaxis()->FindBin(maxPT);
 
-  TH1 *hPythiaTrueTrimmed = (TH1 *)hPythiaTrue->Clone("hPythiaTrueTrimmed");
-  TH1 *hPythiaRecoTrimmed = (TH1 *)hPythiaReco->Clone("hPythiaRecoTrimmed");
+  static int trimCounter = 0;
+  TH1 *hPythiaTrueTrimmed = (TH1 *)hPythiaTrue->Clone(Form("hPythiaTrueTrimmed_%d", trimCounter));
+  TH1 *hPythiaRecoTrimmed = (TH1 *)hPythiaReco->Clone(Form("hPythiaRecoTrimmed_%d", trimCounter++));
 
   for (int i = 1; i < hPythiaTrueTrimmed->GetNbinsX(); i++) {
     if (i < binMin || i > binMax) {
@@ -707,49 +864,73 @@ TH1 *DrawUnfoldHerwig(TH1 * hPythiaInvY, TH1 *hPythiaTrue, TH1 *hPythiaReco, TH2
   std::cout << "h2CorrelateHerwig successfully scaled." << std::endl;
 
   // Generate projections
-  auto hMatchTrue = h2CorrelateHerwig->ProjectionY("hMatchTrue", binMin, binMax);
-  auto hMatchReco = h2CorrelateHerwig->ProjectionX("hMatchReco", binMin, binMax);
+  static int herwigProjCounter = 0;
+  auto hMatchTrue = h2CorrelateHerwig->ProjectionY(Form("hMatchTrue_%d", herwigProjCounter), binMin, binMax);
+  auto hMatchReco = h2CorrelateHerwig->ProjectionX(Form("hMatchReco_%d", herwigProjCounter++), binMin, binMax);
   if (!hMatchTrue || !hMatchReco) {
     std::cerr << "Error: Projections hMatchTrue or hMatchReco failed." << std::endl;
     return nullptr;
   }
   std::cout << "Projections hMatchTrue and hMatchReco successfully created." << std::endl;
 
-  // Create response matrix (kernel-style: 3-arg constructor, no Fill/Miss/Fake)
+  // Create and manipulate response matrix
   TH2F *h2Res = (TH2F *)h2CorrelateHerwig->Clone(Form("hist_%i", ++n));
-  if (h2Res->GetSumw2N() == 0) h2Res->Sumw2();
+  TH1F *hFake = (TH1F *)hReco->Clone(Form("hist_%i", ++n));
+  hFake->Add(hMatchReco, -1);
+  TH1F *hMiss = (TH1F *)hTure->Clone(Form("hist_%i", ++n));
+  hMiss->Add(hMatchTrue, -1);
 
-  if (!h2Res) {
-    std::cerr << "Error: Cloning response histogram failed." << std::endl;
+  if (!h2Res || !hFake || !hMiss) {
+    std::cerr << "Error: Cloning or manipulating histograms failed." << std::endl;
     return nullptr;
   }
-  std::cout << "Response histogram successfully created." << std::endl;
+  std::cout << "Response histograms successfully created and manipulated." << std::endl;
 
-  // Build kernel-style response: 3-arg constructor avoids doubling bug
-  RooUnfoldResponse *hResponse = new RooUnfoldResponse(hMatchReco, hMatchTrue, h2Res);
+  // Build the response object
+  RooUnfoldResponse *hResponse = new RooUnfoldResponse(hReco, hTure);
   if (!hResponse) {
     std::cerr << "Error: RooUnfoldResponse object creation failed." << std::endl;
     return nullptr;
   }
-  std::cout << "RooUnfoldResponse (kernel-style) successfully created." << std::endl;
+  std::cout << "RooUnfoldResponse object successfully created." << std::endl;
 
-  // Purity correction: remove fakes from data before unfolding
-  TH1F *hPurityHerwig = (TH1F *)hReco->Clone(Form("hPurityHerwig_%i", ++n));
-  hPurityHerwig->Reset();
-  for (int ibin = 1; ibin <= hPurityHerwig->GetNbinsX(); ++ibin) {
-    double denom = hReco->GetBinContent(ibin);
-    double numer = hMatchReco->GetBinContent(ibin);
-    double p = (denom > 0) ? (numer / denom) : 0.0;
-    hPurityHerwig->SetBinContent(ibin, TMath::Max(0.0, TMath::Min(1.0, p)));
+  for (auto i = binMin; i <= binMax; i++) {
+    for (auto j = 1; j <= h2Res->GetNbinsY(); j++) {
+      Double_t bincenx = h2Res->GetXaxis()->GetBinCenter(i);
+      Double_t binceny = h2Res->GetYaxis()->GetBinCenter(j);
+      Double_t bincont = h2Res->GetBinContent(i, j);
+      if (bincont > 0) {
+        // For small integer values, use loop for proper statistical error calculation
+        // For large values, use weight to avoid performance issues
+        if (bincont < 10000 && bincont == TMath::Nint(bincont)) {
+          for (int k = 1; k <= TMath::Nint(bincont); k++) {
+            hResponse->Fill(bincenx, binceny);
+          }
+        } else {
+          hResponse->Fill(bincenx, binceny, bincont);
+        }
+      }
+    }
   }
-  TH1 *hDataPurityCorrected = (TH1 *)hData->Clone(Form("hDataPurityCorrHerwig_%i", ++n));
-  for (int ibin = 1; ibin <= hDataPurityCorrected->GetNbinsX(); ++ibin) {
-    hDataPurityCorrected->SetBinContent(ibin, hData->GetBinContent(ibin) * hPurityHerwig->GetBinContent(ibin));
-    hDataPurityCorrected->SetBinError(ibin, hData->GetBinError(ibin) * hPurityHerwig->GetBinContent(ibin));
-  }
+  std::cout << "RooUnfoldResponse filled with data from h2Res." << std::endl;
 
-  // Perform the unfolding with purity-corrected data
-  RooUnfoldBayes unfoldHerwig(hResponse, hDataPurityCorrected, 4);
+
+  for (auto i = binMin; i <= binMax; i++) {
+    Double_t bincenx = hMiss->GetXaxis()->GetBinCenter(i);
+    Double_t bincont = hMiss->GetBinContent(i);
+    hResponse->Miss(bincenx, bincont);
+  }
+  std::cout << "RooUnfoldResponse filled with miss data." << std::endl;
+
+  for (auto i = binMin; i <= binMax; i++) {
+    Double_t bincenx = hFake->GetXaxis()->GetBinCenter(i);
+    Double_t bincont = hFake->GetBinContent(i);
+    hResponse->Fake(bincenx, bincont);
+  }
+  std::cout << "RooUnfoldResponse filled with fake data." << std::endl;
+
+  // Perform the unfolding
+  RooUnfoldBayes unfoldHerwig(hResponse, hData, 4);
   auto hUnfoldedDataHerwig = (TH1 *)unfoldHerwig.Hreco();
   if (!hUnfoldedDataHerwig) {
     std::cerr << "Error: Unfolding process failed." << std::endl;
@@ -869,88 +1050,9 @@ TH1 *DrawUnfoldHerwig(TH1 * hPythiaInvY, TH1 *hPythiaTrue, TH1 *hPythiaReco, TH2
 
 //   return hUnfoldedDataHerwig;
 // }
-double CalculateLcurve(double residualNorm, double regularizationNorm) {
-    return std::log(residualNorm) + std::log(regularizationNorm);
-}
-
-// double optimalK;
-// void OptimizeRegularizationParameter(RooUnfoldResponse &responseMatrix, TH1 *dataJetPt, int maxK) {
-//     std::vector<double> residualNorms;
-//     std::vector<double> regularizationNorms;
-//     std::vector<double> kValues;
-
-//     // Loop over possible k-values to evaluate the L-curve
-//     for (int k = 1; k <= maxK; ++k) {
-//         RooUnfoldSvd unfoldSVD(&responseMatrix, dataJetPt, k);
-//         TH1* unfolded = unfoldSVD.Hreco();
-
-//         // Calculate residual norm (difference between measured and unfolded)
-//         double residualNorm = 0.0;
-//         double regularizationNorm = 0.0; // Initialize regularization norm
-
-//         for (int i = 1; i <= dataJetPt->GetNbinsX(); ++i) {
-//             double observed = dataJetPt->GetBinContent(i);
-//             double expected = unfolded->GetBinContent(i);
-//             double error = dataJetPt->GetBinError(i);
-
-//             if (error != 0) {
-//                 double residual = (observed - expected) / error;
-//                 residualNorm += residual * residual;
-//             }
-
-//             // Assuming regularizationNorm is something like the sum of singular values or chi-squared approximation
-//             regularizationNorm += std::abs(expected); // Simplified example, customize as needed
-//         }
-
-//         residualNorm = std::sqrt(residualNorm);
-
-//         // Store the norms for L-curve analysis
-//         residualNorms.push_back(residualNorm);
-//         regularizationNorms.push_back(regularizationNorm);
-//         kValues.push_back(k);
-
-//         std::cout << "k = " << k << ": Residual Norm = " << residualNorm
-//                   << ", Regularization Norm = " << regularizationNorm << std::endl;
-//     }
-
-//     // Analyze L-curve to find the optimal k
-//     int optimalK = 1;
-//     double minLcurveValue = CalculateLcurve(residualNorms[0], regularizationNorms[0]);
-//     for (size_t i = 1; i < kValues.size(); ++i) {
-//         double lcurveValue = CalculateLcurve(residualNorms[i], regularizationNorms[i]);
-//         if (lcurveValue < minLcurveValue) {
-//             minLcurveValue = lcurveValue;
-//             optimalK = kValues[i];
-//         }
-//     }
-
-//     std::cout << "Optimal k-value found: " << optimalK << std::endl;
-
-//     // Plot L-curve
-//     TCanvas *cLcurve = new TCanvas("cLcurve", "L-curve Analysis", 800, 600);
-//     TGraph *lcurveGraph = new TGraph(kValues.size());
-//     for (size_t i = 0; i < kValues.size(); ++i) {
-//         lcurveGraph->SetPoint(i, std::log(residualNorms[i]), std::log(regularizationNorms[i]));
-//     }
-//     lcurveGraph->SetTitle("L-curve;log(Residual Norm);log(Regularization Norm)");
-//     lcurveGraph->SetMarkerStyle(20);
-//     lcurveGraph->Draw("ALP");
-
-//     cLcurve->SaveAs("plots/AN_Charged-particle-jet-cross-section-in-pp-collisions-at-13.6-TeV/Figures/systematics/SVDUnfoldLcurve.pdf");
-
-//     // Now perform the unfolding with the optimal k-value
-//     RooUnfoldSvd unfoldSVDOptimal(&responseMatrix, dataJetPt, optimalK);
-//     TH1* unfoldedOptimal = unfoldSVDOptimal.Hreco();
-
-//     // Optionally, save the unfolded result
-//     TCanvas *cUnfolded = new TCanvas("cUnfolded", "Unfolded Spectrum", 800, 600);
-//     unfoldedOptimal->Draw();
-//     cUnfolded->SaveAs("plots/AN_Charged-particle-jet-cross-section-in-pp-collisions-at-13.6-TeV/Figures/systematics/SVDUnfoldedOptimalK.pdf");
-// }
-
 TH1* DrawSecondaryContaimination(TH1* hCorrData) {
   std::vector<TH1*> hSystErrSecCon;
-    Filipad2 *secPad = new Filipad2(++nn, 2, 0.3, 100, 50, 0.7, 1, 1);
+    Filipad2 *secPad = new Filipad2("Secondary_Pad", ++nn, 2, 0.3, 100, 50, 0.7, 1, 1);
     secPad->Draw();
     TPad *secpad = secPad->GetPad(1);
     optFili(*secpad, 1, 1, 0, 1);
@@ -998,13 +1100,14 @@ TH1* DrawSecondaryContaimination(TH1* hCorrData) {
     gStyle->SetOptFit(111);
     secpad->Update();
 
-    TH1 *hist_default = new TH1D("hist_default", "Original Fit", nptBinsGen, ptbinGen);
-    TH1 *hist_up = new TH1D("hist_up", "+1% Fit",  nptBinsGen, ptbinGen);
-    TH1 *hist_down = new TH1D("hist_down", "-1% Fit",  nptBinsGen, ptbinGen);
+    static int secConCounter = 0;
+    TH1 *hist_default = new TH1D(Form("hist_default_%d", secConCounter), "Original Fit", nptBinsGen, ptbinGen);
+    TH1 *hist_up = new TH1D(Form("hist_up_%d", secConCounter), "+1% Fit",  nptBinsGen, ptbinGen);
+    TH1 *hist_down = new TH1D(Form("hist_down_%d", secConCounter), "-1% Fit",  nptBinsGen, ptbinGen);
 
-    TH1 *hist_ratio_up = new TH1D("hist_ratio_up", "Ratio +1%",  nptBinsGen, ptbinGen);
-    TH1 *hist_ratio_down = new TH1D("hist_ratio_down", "Ratio -1%",  nptBinsGen, ptbinGen);
-    TH1 *hist_ratio_default = new TH1D("hist_ratio_default", "Ratio Default",  nptBinsGen, ptbinGen);
+    TH1 *hist_ratio_up = new TH1D(Form("hist_ratio_up_%d", secConCounter), "Ratio +1%",  nptBinsGen, ptbinGen);
+    TH1 *hist_ratio_down = new TH1D(Form("hist_ratio_down_%d", secConCounter), "Ratio -1%",  nptBinsGen, ptbinGen);
+    TH1 *hist_ratio_default = new TH1D(Form("hist_ratio_default_%d", secConCounter++), "Ratio Default",  nptBinsGen, ptbinGen);
 
     for (int i = 1; i <= nptBinsGen; ++i) {
         double x = (ptbinGen[i-1] + ptbinGen[i]) / 2.0;
@@ -1051,7 +1154,7 @@ TH1* DrawSecondaryContaimination(TH1* hCorrData) {
     hist_ratio_default->SetMarkerStyle(25);
     hist_ratio_default->SetMarkerColor(kBlack);
     hset(*hist_ratio_default, JetPtDataFinalTitleX, "Comp. / Default", 1.2, 0.75, 0.1, 0.09, 0.01, 0.01, 0.1, 0.1, 510, 505);
-    hoptset(*hist_ratio_default, 0, kBlack, PlotPtMin, PlotPtMax, 0.7, 1.3, 1, 1, 1, 25);
+    hoptset(*hist_ratio_default, 1, kBlack, PlotPtMin, PlotPtMax, 0.7, 1.3, 1, 1, 1, 25);
     legSecRat->AddEntry(hist_ratio_default, "Tsallis fit / Run 3", "p");
     hist_ratio_default->Draw("P same");
 
@@ -1095,7 +1198,8 @@ TH1 *GetTriggerEfficiency() {
 }
 
 TH1* ApplySystematicUncertainty(TH1* hist, TH1* errorHist) {
-    TH1* histWithError = (TH1*)hist->Clone("histWithError");
+    static int systErrCounter = 0;
+    TH1* histWithError = (TH1*)hist->Clone(Form("histWithError_%d", systErrCounter++));
 
     int nBins = hist->GetNbinsX();
     int nErrorBins = errorHist->GetNbinsX();
@@ -1118,12 +1222,17 @@ TH1* ApplySystematicUncertainty(TH1* hist, TH1* errorHist) {
     return histWithError;
 }
 TH1 *Run3XSectionWoTrackTuner() {
-  auto Run3file = TFile::Open("Run3_CrossSection_woTrackTuner.root", "read");
+  auto Run3file = TFile::Open("../Run3_CrossSection_woTrackTuner.root", "read");
+  auto hRun3Xsection = (TH1 *) Run3file->Get("Run3_CrossSection");
+  return hRun3Xsection;
+}
+TH1 *Run3XSectionWTrackPtSmear1p5() {
+  auto Run3file = TFile::Open("SystematicUncertainties/Run3_CrossSection_TrackPtSmear1p5.root", "read");
   auto hRun3Xsection = (TH1 *) Run3file->Get("Run3_CrossSection");
   return hRun3Xsection;
 }
 TH1 *Run3XSectionWTrackEff() {
-  auto Run3file = TFile::Open("Run3_CrossSection_TrackingEfficiency.root", "read");
+  auto Run3file = TFile::Open("../Run3_CrossSection_TrackingEfficiency.root", "read");
   auto hRun3Xsection = (TH1 *) Run3file->Get("Run3_CrossSection");
   return hRun3Xsection;
 }
@@ -1150,4 +1259,57 @@ void ALICEfigureLegend(const char *FigureLabel, double x11, double y11, double x
 
       ALICEleg1->Draw();
       ALICEleg2->Draw();
+}
+
+// PYTHIA 13.6 TeV jet cross section from DGKim
+TH1* DrawPythia13600() {
+    cout << "Drawing PYTHIA13600" << endl;
+    // auto fPythia13600 = TFile::Open("/Users/js/Downloads/PYTHIA_jetXsection13.6TeV_DGKim.root", "read"); // DGKim
+    auto fPythia13600 = TFile::Open("/Users/js/alice/pythiagen/postprocess/results/pp_13600GeV_HardQCD_all_on_UE_ISR_FSR_on/PYTHIA_pp_13600_GeV.root", "read");
+    
+    if (!fPythia13600 || fPythia13600->IsZombie()) {
+        std::cerr << "Error: Cannot open PYTHIA file: " << std::endl;
+        return nullptr;
+    }
+    
+    TH1* hPYTHIA = (TH1*)fPythia13600->Get("hJetPt");
+    if (!hPYTHIA) {
+        std::cerr << "Error: hJetPt histogram not found in PYTHIA file" << std::endl;
+        fPythia13600->Close();
+        return nullptr;
+    }
+
+    TH1* hNevents = (TH1*)fPythia13600->Get("hnevent");
+    double Nevts = hNevents->GetBinContent(1);
+    
+    const Double_t ptbinPYTHIA[26] = {0,  1,  2,  3,  4,  5,   6,   7,  8,
+      9,  10, 12, 14, 16, 18,  20,  25, 30,
+      40, 50, 60, 70, 85, 100, 140, 200};
+    static int pythiaCounter = 0;
+    hPYTHIA = hPYTHIA->Rebin(25, Form("hPYTHIA13600_rebinned_%d", pythiaCounter++), ptbinPYTHIA);
+    
+    // hPYTHIA->Scale(1.0 / Nevts, "width");
+    hPYTHIA->Scale(1.0 / 100000000, "width");
+    hPYTHIA->SetLineColor(kMagenta);
+    hPYTHIA->SetLineStyle(1);
+    hPYTHIA->SetLineWidth(2);
+    hPYTHIA->SetMarkerStyle(0);
+    
+    return hPYTHIA;
+}
+
+TH1* DrawChangwhan2022MB() {
+    auto fChangwhan2022MB = TFile::Open("/Users/js/cernbox/workspace/O2Physics/jets/PYTHIA/Changwhan/jetptincljet_unfolded_22o_24f3c_lumi.root", "read");
+    auto hChangwhan2022MB = (TH1*)fChangwhan2022MB->Get("unfolded");
+    return hChangwhan2022MB;
+}
+TH1* DrawChangwhan2022JJMC() {
+    auto fChangwhan2022JJMC = TFile::Open("/Users/js/cernbox/workspace/O2Physics/jets/PYTHIA/Changwhan/jetptincljet_unfolded_22o_25a2b_lumi.root", "read");
+    auto hChangwhan2022JJMC = (TH1*)fChangwhan2022JJMC->Get("unfolded");
+    return hChangwhan2022JJMC;
+}
+TH1* DrawChangwhan2024MB() {
+    auto fChangwhan2024MB = TFile::Open("/Users/js/cernbox/workspace/O2Physics/jets/PYTHIA/Changwhan/jetptincljet_unfolded_24_24f4d_lumi.root", "read");
+    auto hChangwhan2024MB = (TH1*)fChangwhan2024MB->Get("unfolded");
+    return hChangwhan2024MB;
 }
